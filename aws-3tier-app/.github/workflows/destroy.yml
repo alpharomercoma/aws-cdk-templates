@@ -1,0 +1,68 @@
+# AWS 3-Tier Application - Destroy Workflow
+#
+# Manual workflow to tear down all infrastructure.
+# WARNING: This will delete RDS database and all data!
+
+name: Destroy 3-Tier Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "DESTROY" to confirm deletion'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-southeast-1' }}
+
+defaults:
+  run:
+    working-directory: aws-3tier-app
+
+jobs:
+  destroy:
+    name: Destroy
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'DESTROY'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: aws-3tier-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: CDK Destroy
+        run: npx cdk destroy --all --force
+
+      - name: Summary
+        run: |
+          echo "## Infrastructure Destroyed :wastebasket:" >> $GITHUB_STEP_SUMMARY
+          echo "All 3-Tier resources deleted including RDS database." >> $GITHUB_STEP_SUMMARY
+
+  rejected:
+    name: Rejected
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm != 'DESTROY'
+    steps:
+      - name: Rejection
+        run: |
+          echo "## Destruction Cancelled :shield:" >> $GITHUB_STEP_SUMMARY
+          echo "Type 'DESTROY' to confirm." >> $GITHUB_STEP_SUMMARY
+          exit 1

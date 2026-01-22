@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - AWS 3-Tier Application</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #232f3e 0%, #131921 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .header {
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 153, 0, 0.2);
+        }
+        .header h1 { font-size: 2rem; color: #ff9900; }
+        .container { max-width: 900px; margin: 0 auto; padding: 3rem 2rem; }
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .section h2 { color: #ff9900; margin-bottom: 1rem; font-size: 1.4rem; }
+        .section p { color: #a0aec0; line-height: 1.8; margin-bottom: 1rem; }
+        .section ul { color: #a0aec0; line-height: 1.8; margin-left: 1.5rem; }
+        .section li { margin-bottom: 0.5rem; }
+        .highlight { color: #4ecca3; }
+        .warning { color: #e94560; }
+
+        .code-block {
+            background: #0d1117;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #58a6ff;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        .comparison-table th, .comparison-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .comparison-table th { color: #ff9900; }
+        .comparison-table td { color: #a0aec0; }
+
+        .nav-link {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: 2px solid #ff9900;
+            color: #ff9900;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .nav-link:hover { background: rgba(255, 153, 0, 0.1); }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>About This Project</h1>
+    </div>
+
+    <div class="container">
+        <section class="section">
+            <h2>Purpose</h2>
+            <p>
+                This proof of concept demonstrates a production-grade 3-tier architecture on AWS,
+                showcasing the integration of compute, caching, and database services with proper
+                network isolation, security, and observability.
+            </p>
+            <p>
+                The architecture follows AWS Well-Architected Framework principles and implements
+                industry best practices for security, performance, and cost optimization.
+            </p>
+        </section>
+
+        <section class="section">
+            <h2>Caching Strategy</h2>
+            <p>
+                This application implements the <span class="highlight">cache-aside (lazy loading)</span>
+                pattern, which is the most common caching strategy for read-heavy workloads:
+            </p>
+            <ul>
+                <li><span class="highlight">Read Path:</span> Check cache first → if miss, query database → store in cache → return</li>
+                <li><span class="highlight">Write Path:</span> Write to database → invalidate cache</li>
+                <li><span class="highlight">Benefits:</span> Only requested data is cached, cache failures don't break the app</li>
+            </ul>
+            <div class="code-block">
+# Cache-aside pattern example
+cached = await redis.get(key)
+if cached:
+    return json.loads(cached)  # Cache hit
+
+data = await db.fetch(query)   # Cache miss - query DB
+await redis.setex(key, TTL, json.dumps(data))  # Store in cache
+return data
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Network Architecture</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Subnet Type</th>
+                    <th>Resources</th>
+                    <th>Internet Access</th>
+                </tr>
+                <tr>
+                    <td>Public</td>
+                    <td>ALB, NAT Gateway</td>
+                    <td>Yes (inbound + outbound)</td>
+                </tr>
+                <tr>
+                    <td>Private</td>
+                    <td>EC2 (Application)</td>
+                    <td>Outbound only (via NAT)</td>
+                </tr>
+                <tr>
+                    <td>Isolated</td>
+                    <td>RDS, ElastiCache</td>
+                    <td>None</td>
+                </tr>
+            </table>
+        </section>
+
+        <section class="section">
+            <h2>Security Layers</h2>
+            <ul>
+                <li><span class="highlight">WAF:</span> AWS Managed Rules (CRS, SQLi, Known Bad Inputs) + Rate limiting</li>
+                <li><span class="highlight">CloudFront:</span> DDoS protection, SSL/TLS termination</li>
+                <li><span class="highlight">Security Groups:</span> ALB → EC2 → RDS/Redis (strict ingress rules)</li>
+                <li><span class="highlight">Secrets Manager:</span> Database credentials with automatic rotation capability</li>
+                <li><span class="highlight">Encryption:</span> At rest (RDS, S3, EBS) and in transit (TLS)</li>
+                <li><span class="highlight">IAM:</span> Least privilege roles for EC2</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Cost Estimation (PoC)</h2>
+            <table class="comparison-table">
+                <tr>
+                    <th>Resource</th>
+                    <th>Specification</th>
+                    <th>Est. Monthly Cost</th>
+                </tr>
+                <tr>
+                    <td>EC2</td>
+                    <td>t4g.small (ARM)</td>
+                    <td>~$12</td>
+                </tr>
+                <tr>
+                    <td>RDS PostgreSQL</td>
+                    <td>db.t4g.micro, 20GB</td>
+                    <td>~$15</td>
+                </tr>
+                <tr>
+                    <td>ElastiCache Redis</td>
+                    <td>cache.t4g.micro</td>
+                    <td>~$12</td>
+                </tr>
+                <tr>
+                    <td>ALB</td>
+                    <td>Application LB</td>
+                    <td>~$16</td>
+                </tr>
+                <tr>
+                    <td>NAT Gateway</td>
+                    <td>Single AZ</td>
+                    <td>~$32</td>
+                </tr>
+                <tr>
+                    <td>CloudFront + WAF</td>
+                    <td>Basic usage</td>
+                    <td>~$10</td>
+                </tr>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    <td></td>
+                    <td><strong>~$97/month</strong></td>
+                </tr>
+            </table>
+            <p class="warning" style="margin-top: 1rem;">
+                Note: NAT Gateway is the largest cost. For production, consider NAT instances
+                or AWS PrivateLink to reduce costs.
+            </p>
+        </section>
+
+        <section class="section">
+            <h2>Production Considerations</h2>
+            <ul>
+                <li><span class="highlight">Multi-AZ:</span> Enable RDS Multi-AZ and ElastiCache replication</li>
+                <li><span class="highlight">Auto Scaling:</span> Add ASG for EC2 instances</li>
+                <li><span class="highlight">Monitoring:</span> CloudWatch dashboards, alarms, and X-Ray tracing</li>
+                <li><span class="highlight">Backup:</span> Configure RDS automated backups and Redis snapshots</li>
+                <li><span class="highlight">DR:</span> Cross-region replication for critical data</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Deployment</h2>
+            <div class="code-block">
+# Install dependencies
+cd aws-3tier-app && npm install
+
+# Bootstrap CDK (first time)
+npx cdk bootstrap aws://ACCOUNT/ap-southeast-1
+
+# Deploy
+npx cdk deploy
+
+# Destroy when done
+npx cdk destroy
+            </div>
+        </section>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="index.html" class="nav-link">← Back to Home</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>AWS 3-Tier Application | Infrastructure as Code</p>
+    </footer>
+</body>
+</html>
