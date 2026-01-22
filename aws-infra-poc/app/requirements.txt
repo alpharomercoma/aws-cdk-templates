@@ -1,0 +1,17 @@
+# FastAPI Application Dependencies
+# Production-grade setup for EC2 deployment
+
+# Web Framework
+fastapi==0.115.6
+
+# ASGI Server
+uvicorn[standard]==0.34.0
+
+# Process Manager (for production)
+gunicorn==23.0.0
+
+# Template Engine
+jinja2==3.1.5
+
+# HTTP client (for testing)
+httpx==0.28.1

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philippine Time - AWS Infrastructure PoC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            padding: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .clock-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #e94560;
+        }
+
+        .timezone {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+            margin-bottom: 2rem;
+        }
+
+        .time-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+        }
+
+        .date-display {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .day-display {
+            font-size: 1rem;
+            color: #4ecca3;
+        }
+
+        .aws-badge {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: rgba(255, 153, 0, 0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 153, 0, 0.3);
+        }
+
+        .aws-badge h3 {
+            color: #ff9900;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .aws-services {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .service-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            color: #fff;
+        }
+
+        footer {
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="clock-icon">&#128336;</div>
+        <h1>Philippine Time</h1>
+        <p class="timezone">{{ timezone }}</p>
+
+        <div class="time-display">{{ current_time.split(' ')[1] }}</div>
+        <div class="date-display">{{ date_formatted }}</div>
+        <div class="day-display">{{ day_of_week }}</div>
+
+        <div class="aws-badge">
+            <h3>Powered by AWS</h3>
+            <div class="aws-services">
+                <span class="service-tag">CloudFront</span>
+                <span class="service-tag">WAF</span>
+                <span class="service-tag">ALB</span>
+                <span class="service-tag">EC2</span>
+                <span class="service-tag">Route 53</span>
+                <span class="service-tag">S3</span>
+            </div>
+        </div>
+
+        <footer>
+            Served from EC2 via FastAPI | Last generated: {{ current_time }}
+        </footer>
+    </div>
+</body>
+</html>

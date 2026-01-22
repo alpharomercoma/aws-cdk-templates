@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - AWS Infrastructure PoC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #232f3e 0%, #131921 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 153, 0, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: #ff9900;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            color: #ff9900;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .section p {
+            color: #a0aec0;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .section ul {
+            color: #a0aec0;
+            line-height: 1.8;
+            margin-left: 1.5rem;
+        }
+
+        .section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .tech-item {
+            background: rgba(255, 153, 0, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #ff9900;
+        }
+
+        .tech-item h4 {
+            color: #fff;
+            margin-bottom: 0.3rem;
+        }
+
+        .tech-item p {
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .code-block {
+            background: #0d1117;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #58a6ff;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .highlight {
+            color: #4ecca3;
+        }
+
+        .nav-link {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: 2px solid #ff9900;
+            color: #ff9900;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 153, 0, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>About This Project</h1>
+    </div>
+
+    <div class="container">
+        <section class="section">
+            <h2>Purpose</h2>
+            <p>
+                This proof of concept demonstrates the integration of multiple AWS services
+                into a cohesive, production-ready architecture. It showcases industry best
+                practices for deploying web applications on AWS with proper security,
+                scalability, and maintainability considerations.
+            </p>
+            <p>
+                The project is designed as a learning resource and template for teams
+                looking to understand how these AWS services work together in real-world
+                scenarios.
+            </p>
+        </section>
+
+        <section class="section">
+            <h2>Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <h4>AWS CDK (TypeScript)</h4>
+                    <p>Infrastructure as Code</p>
+                </div>
+                <div class="tech-item">
+                    <h4>FastAPI (Python)</h4>
+                    <p>Modern async API framework</p>
+                </div>
+                <div class="tech-item">
+                    <h4>Gunicorn + Uvicorn</h4>
+                    <p>Production ASGI server</p>
+                </div>
+                <div class="tech-item">
+                    <h4>GitHub Actions</h4>
+                    <p>CI/CD Pipeline</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>Security Features</h2>
+            <ul>
+                <li><span class="highlight">WAF Rules:</span> Protection against OWASP Top 10 vulnerabilities</li>
+                <li><span class="highlight">Rate Limiting:</span> Prevent abuse and DDoS attempts</li>
+                <li><span class="highlight">Origin Access Control:</span> S3 bucket is private, accessible only via CloudFront</li>
+                <li><span class="highlight">Security Groups:</span> Minimal ingress rules, EC2 only accepts traffic from ALB</li>
+                <li><span class="highlight">IAM Roles:</span> Least privilege principle for all resources</li>
+                <li><span class="highlight">Encryption:</span> Data encrypted at rest (S3, EBS) and in transit (HTTPS)</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Deployment</h2>
+            <p>The infrastructure is deployed using AWS CDK with a single command:</p>
+            <div class="code-block">
+# Deploy the entire stack
+npm run cdk deploy
+
+# Or deploy with approval
+npm run cdk deploy --require-approval broadening
+            </div>
+            <p>
+                CI/CD is configured via GitHub Actions, automatically deploying changes
+                when code is pushed to the main branch.
+            </p>
+        </section>
+
+        <section class="section">
+            <h2>Cost Optimization</h2>
+            <ul>
+                <li><span class="highlight">t4g.nano:</span> ARM-based Graviton processor for best price/performance</li>
+                <li><span class="highlight">CloudFront Caching:</span> Reduces origin requests</li>
+                <li><span class="highlight">Single AZ:</span> For PoC purposes (use Multi-AZ in production)</li>
+                <li><span class="highlight">No NAT Gateway:</span> EC2 in public subnet for cost savings in PoC</li>
+            </ul>
+        </section>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="index.html" class="nav-link">&#8592; Back to Home</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>AWS Infrastructure Proof of Concept | Infrastructure as Code</p>
+    </footer>
+</body>
+</html>
