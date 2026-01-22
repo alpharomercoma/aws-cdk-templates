@@ -91,9 +91,68 @@ Log File: /var/log/autoshutdown.log
 
 ## Prerequisites
 
-- AWS CLI configured with appropriate credentials
 - Node.js 18+ and npm
+- AWS CLI v2 (see installation below)
 - AWS CDK CLI (`npm install -g aws-cdk`)
+
+### Install AWS CLI (if not installed)
+
+**Ubuntu/Debian (ARM64):**
+```bash
+cd /tmp
+curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
+unzip -q awscliv2.zip && sudo ./aws/install
+rm -rf aws awscliv2.zip
+```
+
+**Ubuntu/Debian (x86_64):**
+```bash
+cd /tmp
+curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip -q awscliv2.zip && sudo ./aws/install
+rm -rf aws awscliv2.zip
+```
+
+**macOS:**
+```bash
+curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+sudo installer -pkg AWSCLIV2.pkg -target /
+```
+
+### AWS Authentication
+
+**Option A: Browser Login via SSO (if your organization uses AWS IAM Identity Center)**
+```bash
+aws configure sso
+# Enter your SSO start URL (get this from your IT admin)
+# A browser will open - just click to login
+```
+
+**Option B: Access Keys (for personal AWS accounts)**
+
+1. Go to https://console.aws.amazon.com and login
+2. Click your name (top right) → **Security credentials**
+3. Scroll to **Access keys** → **Create access key**
+4. Select "Command Line Interface (CLI)" → Check the confirmation → **Next** → **Create access key**
+5. Copy both keys (you won't see the secret again!)
+
+Then run:
+```bash
+aws configure
+```
+```
+AWS Access Key ID: <paste your access key>
+AWS Secret Access Key: <paste your secret key>
+Default region name: ap-southeast-1
+Default output format: <just press Enter>
+```
+
+**Option C: Environment Variables**
+```bash
+export AWS_ACCESS_KEY_ID=your-access-key
+export AWS_SECRET_ACCESS_KEY=your-secret-key
+export AWS_DEFAULT_REGION=ap-southeast-1
+```
 
 ## Deployment
 
@@ -105,8 +164,9 @@ Log File: /var/log/autoshutdown.log
 
 2. **Bootstrap CDK (first time only):**
    ```bash
-   cdk bootstrap aws://<ACCOUNT_ID>/ap-southeast-1
+   cdk bootstrap
    ```
+   CDK automatically uses your configured AWS credentials and deploys to ap-southeast-1 (hardcoded in the stack).
 
 3. **Deploy the stack:**
    ```bash
