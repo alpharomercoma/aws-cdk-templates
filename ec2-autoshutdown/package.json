@@ -1,8 +1,8 @@
 {
-  "name": "aws",
+  "name": "ec2-autoshutdown",
   "version": "0.1.0",
   "bin": {
-    "aws": "bin/aws.js"
+    "ec2-autoshutdown": "bin/ec2-autoshutdown.js"
   },
   "scripts": {
     "build": "tsc",
