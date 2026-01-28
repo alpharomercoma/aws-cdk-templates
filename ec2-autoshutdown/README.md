@@ -71,6 +71,17 @@ Log File: /var/log/autoshutdown.log
 - **Data retention**: Stopped instances retain their private IP, instance configuration, root EBS volume, and all data
 - **Restart**: Simply start the instance again when needed via AWS Console, CLI, or API
 
+**Start a stopped instance via CLI:**
+```bash
+aws ec2 start-instances --instance-ids <INSTANCE_ID> --region ap-southeast-1
+```
+
+**Note:** The public IP address changes each time the instance restarts. After starting, get the new IP:
+```bash
+aws ec2 describe-instances --instance-ids <INSTANCE_ID> --region ap-southeast-1 \
+  --query "Reservations[].Instances[].PublicIpAddress" --output text
+```
+
 ## Architecture
 
 ```
@@ -207,6 +218,13 @@ chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
 Use the command from the `SshCommand` output:
 ```bash
 ssh -i ~/.ssh/Ec2AutoshutdownStack-keypair.pem ubuntu@<PUBLIC_DNS_NAME>
+```
+
+**Troubleshooting: "Permissions are too open" error**
+
+If you see `WARNING: UNPROTECTED PRIVATE KEY FILE!`, fix the permissions:
+```bash
+chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
 ```
 
 ### Option 2: AWS Systems Manager Session Manager
