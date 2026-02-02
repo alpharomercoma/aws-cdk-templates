@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+import * as cdk from 'aws-cdk-lib/core';
+import { TrainiumSpotStack } from '../lib/trainium-spot-stack';
+
+const app = new cdk.App();
+new TrainiumSpotStack(app, 'TrainiumSpotStack', {
+  env: {
+    region: 'us-east-2',
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+  },
+  description: 'Cost-optimized Trainium1 spot instance with aggressive auto-shutdown (2 min inactivity)',
+});
