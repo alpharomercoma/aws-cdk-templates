@@ -48,7 +48,7 @@ export class TrainiumSpotStack extends cdk.Stack {
         },
       ],
       // Use single AZ to avoid context lookups and minimize costs
-      availabilityZones: [`${cdk.Stack.of(this).region}a`],
+      availabilityZones: [`${cdk.Stack.of(this).region}c`],
     });
 
     // ============================================================
@@ -338,7 +338,7 @@ export class TrainiumSpotStack extends cdk.Stack {
 
       // Request Spot Instance
       spotOptions: {
-        requestType: ec2.SpotRequestType.ONE_TIME,
+        requestType: ec2.SpotRequestType.PERSISTENT,
         interruptionBehavior: ec2.SpotInstanceInterruption.STOP,
         maxPrice: undefined, // Use current spot price (most cost effective)
       },

@@ -4,13 +4,43 @@ A highly cost-optimized AWS CDK stack for deploying an AWS Trainium1 (trn1.2xlar
 
 ## Cost Optimization Features
 
-| Feature | Configuration | Savings |
-|---------|---------------|---------|
-| **Spot Instance** | One-time spot request | Up to 90% vs on-demand |
-| **Auto-Shutdown** | 2-minute inactivity (script) + 3-minute (CloudWatch) | Prevents idle costs |
-| **Minimal Storage** | 50 GiB gp3 | Reduced EBS costs |
-| **CPU Optimization** | 2 cores × 1 thread | Reduced per-vCPU charges |
-| **Single AZ** | No NAT gateway | No redundancy costs |
+|Feature|Configuration|Savings|
+|-------|-------------|-------|
+|**Spot Instance**|Persistent spot request (Interruption: STOP)|Up to 90% vs on-demand|
+|**Auto-Shutdown**|2-minute inactivity (script) + 3-minute (CloudWatch)|Prevents idle costs|
+|**Minimal Storage**|50 GiB gp3|Reduced EBS costs|
+|**CPU Optimization**|2 cores × 1 thread|Reduced per-vCPU charges|
+|**Single AZ**|us-east-2c (hardcoded)|No redundancy costs|
+
+## Prerequisites
+
+1.  **Node.js** (v18+) and **pnpm** installed.
+2.  **AWS Account** with appropriate Service Quotas (see Troubleshooting).
+3.  **Environment Variables**: Create a `.env` file in this directory:
+
+    ```bash
+    cp .env.example .env  # if example exists, otherwise create new
+    ```
+
+    Content of `.env`:
+    ```ini
+    AWS_ACCESS_KEY_ID=your_access_key
+    AWS_SECRET_ACCESS_KEY=your_secret_key
+    # AWS_SESSION_TOKEN=... (if using temporary credentials)
+    ```
+
+## Troubleshooting & Common Issues
+
+### 1. Max Spot Instance Count Exceeded
+If deployment fails with `Max spot instance count exceeded`, your AWS account has a Spot Instance quota of 0 for `trn1` instances.
+**Fix**: Request a quota increase for "All Standard Spot Instance Requests" in the AWS Service Quotas console, or switch to On-Demand (see code).
+
+### 2. Availability Zone Issues
+`trn1` instances are not available in all AZs. This stack is hardcoded to `us-east-2c`. If you see "unsupported AZ" errors, try changing the AZ in `lib/trainium-spot-stack.ts`.
+
+### 3. Permissions / AccessDenied
+If running from an EC2 instance, ensure the instance role has `AdministratorAccess`.
+- If you see `AccessDenied` during bootstrap: Export valid AWS credentials (`AWS_ACCESS_KEY_ID`, etc.) before running commands.
 
 ## Instance Specifications
 
@@ -67,8 +97,8 @@ pnpm run build
 # Synthesize CloudFormation template (verify without deploying)
 pnpm run cdk synth
 
-# Deploy
-pnpm run cdk deploy
+# Deploy (loads credentials from .env)
+set -a; source .env; set +a; pnpm run cdk deploy --require-approval never
 ```
 
 ## Connecting to the Instance
