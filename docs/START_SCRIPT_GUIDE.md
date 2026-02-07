@@ -24,13 +24,13 @@ This tool creates personalized starter scripts for your AWS EC2 instances. Each 
 ## Features
 
 ✅ **Auto-discovery**: Automatically queries AWS for your EC2 instances
-✅ **Multi-region support**: Search in default region or all regions
+✅ **Multi-region by default**: Searches all AWS regions to find all your instances
 ✅ **Smart naming**: Uses EC2 Name tag or derives from current directory
 ✅ **Safe overwrites**: Prompts before replacing existing scripts (defaults to "no")
 ✅ **Region-aware**: Handles instances in any AWS region
 ✅ **SSH integration**: Optionally updates SSH config with new IP
 ✅ **Desktop notifications**: Visual feedback on Linux desktops (i3, GNOME, etc.)
-✅ **User-friendly**: Colored output, table display, and progress indicators
+✅ **Clean output**: Simple, straightforward table display
 
 ## Example Walkthrough
 
@@ -45,16 +45,20 @@ Checking AWS credentials...
 ✓ AWS credentials valid
 
 Step 1: Discovering EC2 Instances
-Searching in region: us-east-1
+
+Search all regions? [Y/n] (recommended): Y
+
+Scanning all regions...
+..................
 
 Available EC2 Instances:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------------------------------------------
 No.  Name                 Instance ID            State        Type            Region
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--------------------------------------------------------------------------------------------------------
 1.   dev-server           i-0a1b2c3d4e5f6g7h8    stopped      t3.medium       us-east-1
 2.   ml-workstation       i-0123456789abcdef0    running      g4dn.xlarge     us-west-2
-3.   web-app-prod         i-0fedcba987654321     running      t3.large        us-east-1
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.   web-app-prod         i-0fedcba987654321     running      t3.large        ap-southeast-1
+--------------------------------------------------------------------------------------------------------
 
 Select instance number (1-3) or 'q' to quit: 1
 
@@ -136,10 +140,10 @@ The marker name is generated automatically (e.g., `DEV-SERVER_AWS` for a project
 
 The script automatically queries your AWS account for EC2 instances:
 
-- **Default Region**: Searches your configured default region first
-- **All Regions**: If no instances are found, offers to search all AWS regions
-- **Visual Display**: Shows instance Name, ID, State, Type, and Region in a table
-- **State Indicators**: Color-coded states (🟢 running, 🟡 stopped, 🔴 other)
+- **Multi-Region by Default**: Recommends searching all regions to find all instances
+- **Single Region Option**: Can search just the default region if preferred
+- **Visual Display**: Shows instance Name, ID, State, Type, and Region in a simple table
+- **All Instances**: Finds instances in any AWS region across your account
 
 ## Requirements
 

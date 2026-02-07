@@ -118,10 +118,10 @@ if [ $counter -eq 0 ]; then
 fi
 
 # Display projects
-echo -e "${CYAN}${BOLD}Available CDK Projects:${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-printf "${BOLD}%-4s %-25s %-40s${NC}\n" "No." "Project Name" "Stacks"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "Available CDK Projects:"
+echo "--------------------------------------------------------------------------------------------------------"
+printf "%-4s %-25s %-40s\n" "No." "Project Name" "Stacks"
+echo "--------------------------------------------------------------------------------------------------------"
 
 for i in "${!PROJECT_NAMES[@]}"; do
     num=$((i + 1))
@@ -136,7 +136,7 @@ for i in "${!PROJECT_NAMES[@]}"; do
     printf "%-4s %-25s %-40s\n" "$num." "$name" "$stacks"
 done
 
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "--------------------------------------------------------------------------------------------------------"
 echo ""
 
 # Select project
@@ -202,18 +202,18 @@ if [ -z "$STACK_LIST" ]; then
     exit 1
 fi
 
-echo -e "${CYAN}${BOLD}Stacks to be destroyed:${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "Stacks to be destroyed:"
+echo "--------------------------------------------------------------------------------------------------------"
 
 stack_count=0
 while IFS= read -r stack; do
     if [ -n "$stack" ]; then
         stack_count=$((stack_count + 1))
-        echo -e "${RED}  • $stack${NC}"
+        echo "  • $stack"
     fi
 done <<< "$STACK_LIST"
 
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "--------------------------------------------------------------------------------------------------------"
 echo ""
 
 if [ $stack_count -eq 0 ]; then

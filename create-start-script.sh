@@ -65,40 +65,37 @@ get_all_regions() {
 
 # Query instances
 echo -e "${YELLOW}Step 1: Discovering EC2 Instances${NC}"
-echo "Searching in region: $DEFAULT_REGION"
 echo ""
+read -p "Search all regions? [Y/n] (recommended): " search_all
+search_all=${search_all:-Y}
 
-INSTANCES=$(fetch_instances "$DEFAULT_REGION")
+if [[ "$search_all" =~ ^[Yy]$ ]]; then
+    echo ""
+    echo -e "${YELLOW}Scanning all regions...${NC}"
+    TEMP_FILE=$(mktemp)
 
-# Offer to search all regions if no instances found
-if [ -z "$INSTANCES" ]; then
-    echo -e "${YELLOW}No instances found in $DEFAULT_REGION${NC}"
-    read -p "Search all regions? This may take a moment. [y/N]: " search_all
-    search_all=${search_all:-N}
+    for region in $(get_all_regions); do
+        printf "."
+        result=$(fetch_instances "$region")
+        if [ -n "$result" ]; then
+            echo "$result" | while IFS=$'\t' read -r id name state type zone; do
+                echo "$id	$name	$state	$type	$zone	$region" >> "$TEMP_FILE"
+            done
+        fi
+    done
+    echo ""
+    echo ""
 
-    if [[ "$search_all" =~ ^[Yy]$ ]]; then
-        echo ""
-        echo -e "${YELLOW}Searching all regions...${NC}"
-        TEMP_FILE=$(mktemp)
-
-        for region in $(get_all_regions); do
-            echo -n "."
-            result=$(fetch_instances "$region")
-            if [ -n "$result" ]; then
-                echo "$result" | while read -r line; do
-                    echo "$line	$region" >> "$TEMP_FILE"
-                done
-            fi
-        done
-        echo ""
-
-        INSTANCES=$(cat "$TEMP_FILE")
-        rm "$TEMP_FILE"
-    fi
+    INSTANCES=$(cat "$TEMP_FILE")
+    rm "$TEMP_FILE"
+else
+    echo "Searching in region: $DEFAULT_REGION"
+    echo ""
+    INSTANCES=$(fetch_instances "$DEFAULT_REGION")
 fi
 
 if [ -z "$INSTANCES" ]; then
-    echo -e "${RED}No EC2 instances found in your AWS account.${NC}"
+    echo -e "${RED}No EC2 instances found.${NC}"
     exit 1
 fi
 
@@ -110,10 +107,10 @@ declare -a INSTANCE_TYPES
 declare -a INSTANCE_REGIONS
 
 counter=0
-echo -e "${CYAN}${BOLD}Available EC2 Instances:${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-printf "${BOLD}%-4s %-20s %-22s %-12s %-15s %-15s${NC}\n" "No." "Name" "Instance ID" "State" "Type" "Region"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "Available EC2 Instances:"
+echo "--------------------------------------------------------------------------------------------------------"
+printf "%-4s %-20s %-22s %-12s %-15s %-15s\n" "No." "Name" "Instance ID" "State" "Type" "Region"
+echo "--------------------------------------------------------------------------------------------------------"
 
 while IFS=$'\t' read -r id name state type zone region; do
     counter=$((counter + 1))
@@ -133,20 +130,12 @@ while IFS=$'\t' read -r id name state type zone region; do
         name="${name:0:15}..."
     fi
 
-    # Color code state
-    case $state in
-        running)
-            state_colored="${GREEN}$state${NC}"
-            ;;
-        stopped)
-            state_colored="${YELLOW}$state${NC}"
-            ;;
-        *)
-            state_colored="${RED}$state${NC}"
-            ;;
-    esac
+    # Truncate long IDs
+    if [ ${#id} -gt 20 ]; then
+        id="${id:0:18}.."
+    fi
 
-    printf "%-4s %-20s %-22s %-22s %-15s %-15s\n" "$counter." "$name" "$id" "$state_colored" "$type" "$region"
+    printf "%-4s %-20s %-22s %-12s %-15s %-15s\n" "$counter." "$name" "$id" "$state" "$type" "$region"
 
     INSTANCE_IDS+=("$id")
     INSTANCE_NAMES+=("$name")
@@ -155,7 +144,7 @@ while IFS=$'\t' read -r id name state type zone region; do
     INSTANCE_REGIONS+=("$region")
 done <<< "$INSTANCES"
 
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "--------------------------------------------------------------------------------------------------------"
 echo ""
 
 # Select instance

@@ -1,220 +1,110 @@
 # AWS CDK Templates
 
-Collection of AWS CDK infrastructure templates and utilities.
+Collection of AWS CDK infrastructure templates and management utilities.
 
-## 🛠️ Management Tools
+## Management Tools
 
-📚 **Quick Reference**: [TOOLS_OVERVIEW.md](TOOLS_OVERVIEW.md) - Compare all tools and see usage examples
+### EC2 Instance Launcher
+Auto-discover and create keyboard-shortcut commands to start EC2 instances.
 
-### 🚀 EC2 Instance Launcher
-
-Automatically discover and create launch scripts for your EC2 instances.
-
-**Features:**
-- 🔍 Auto-discovers EC2 instances from AWS
-- 🌍 Multi-region support
-- 🏷️ Smart naming from instance Name tags
-- ⚡ One-command instance startup
-- 🔐 SSH config auto-update with dynamic IPs
-- 💻 Desktop notifications
-
-**Usage:**
 ```bash
-# Generate a starter script
 ./create-start-script.sh
-
-# Then use your custom command
-start-aws-<your-project>
+# Creates: start-aws-<project-name>
 ```
 
-📖 [START_SCRIPT_GUIDE.md](START_SCRIPT_GUIDE.md) | 📄 [Example Output](EXAMPLE_OUTPUT.md)
+**Features:** Multi-region discovery, auto SSH config updates, desktop notifications
 
----
+### CDK Stack Destroyer
+Interactive tool to safely destroy CDK stacks with confirmation prompts.
 
-### 🔥 CDK Stack Destroyer
-
-Interactive and safe destruction of CDK stacks with confirmation prompts.
-
-**Features:**
-- 🔍 Auto-discovers CDK projects in repository
-- 📋 Lists all resources before destruction
-- 🔒 Multiple confirmation layers
-- 🛡️ Safe defaults (all prompts default to "No")
-- 📊 Shows account and region information
-- ⚠️ Requires exact project name to proceed
-
-**Usage:**
 ```bash
-# Destroy a CDK project
 ./destroy-cdk-project.sh
 ```
 
-⚠️ **WARNING**: This permanently deletes AWS resources. Use with caution.
+⚠️ **WARNING**: Permanently deletes AWS resources.
 
-📖 [DESTROY_CDK_GUIDE.md](DESTROY_CDK_GUIDE.md) | 📄 [Example Output](DESTROY_EXAMPLE_OUTPUT.md)
+📖 **Documentation**: See [docs/](docs/) for complete guides and examples
 
-## Projects
-
-### [trainium-spot](trainium-spot/)
-Trainium Spot instance deployment
-
-### [ec2-autoshutdown](ec2-autoshutdown/)
-EC2 automatic shutdown scheduler
-
-### [aws-3tier-app](aws-3tier-app/)
-3-tier application infrastructure
-
-### [aws-infra-poc](aws-infra-poc/)
-Static + Dynamic Python server with S3 integration
-
-## Requirements
-
-- Node.js 18+
-- AWS CDK CLI: `npm install -g aws-cdk`
-- AWS CLI configured with credentials
-- Appropriate IAM permissions
+---
 
 ## Available Templates
 
 ### [aws-3tier-app](./aws-3tier-app)
-Production-grade 3-tier architecture demonstrating the integration of PostgreSQL RDS, ElastiCache Redis, EC2, ALB, CloudFront, WAF, and S3 with industry best practices.
+Production-grade 3-tier architecture with PostgreSQL RDS, ElastiCache Redis, EC2, ALB, CloudFront, and WAF.
 
-**Key Features:**
-- Complete 3-tier architecture (Presentation, Application, Data layers)
-- Redis caching with cache-aside pattern
-- WAF protection with rate limiting
-- Multi-AZ capable with auto-scaling support
-- FastAPI application with health monitoring
-
-**Estimated Cost:** ~$97/month
+**Cost:** ~$97/month
 
 ### [aws-infra-poc](./aws-infra-poc)
-Comprehensive proof of concept demonstrating the integration of key AWS services (CloudFront, WAF, ALB, EC2, S3, Route 53) with modern development workflows.
+Static + dynamic content hosting with CloudFront, S3, ALB, and EC2.
 
-**Key Features:**
-- Static content delivery via S3 + CloudFront
-- API hosting with ALB + EC2
-- WAF protection with AWS Managed Rules
-- Optional custom domain support
-- CI/CD with GitHub Actions
-
-**Estimated Cost:** ~$25-35/month
+**Cost:** ~$25-35/month
 
 ### [ec2-autoshutdown](./ec2-autoshutdown)
-EC2 instance with automatic shutdown capabilities based on inactivity detection to reduce costs.
+EC2 instance with auto-shutdown based on inactivity (CPU/SSH detection).
 
-**Key Features:**
-- CloudWatch alarm-based CPU monitoring
-- SSH session detection with systemd timers
-- Automatic key pair generation and secure storage
-- SSM Session Manager support
-- Configurable idle thresholds
-
-**Use Case:** Development instances that should stop when not in use
+**Use Case:** Cost-saving dev instances
 
 ### [trainium-spot](./trainium-spot)
-Cost-optimized AWS Trainium1 spot instance for ML workloads with aggressive auto-shutdown.
+Cost-optimized Trainium1 spot instance for ML workloads with aggressive auto-shutdown.
 
-**Key Features:**
-- Spot pricing (up to 90% savings vs on-demand)
-- Pre-configured Neuron SDK
-- Multi-factor activity detection (SSH, SSM, ML processes, GPU activity)
-- Optimized CPU topology (2 cores × 1 thread)
-- Fast auto-shutdown (2-minute inactivity)
+**Cost:** ~$0.40/hr (spot) vs $1.34/hr (on-demand)
 
-**Estimated Cost:** ~$0.40/hr (spot) vs $1.34/hr (on-demand)
-
-## Prerequisites
-
-All templates require:
-- **Node.js** 18+ or 20+
-- **AWS CLI** v2 configured with credentials
-- **AWS CDK** CLI: `npm install -g aws-cdk`
-- **AWS Account** with appropriate permissions
-
-Some templates use **pnpm** instead of **npm**. Install with:
-```bash
-npm install -g pnpm
-```
+---
 
 ## Quick Start
 
-Each template is self-contained in its own directory:
-
 ```bash
-# Navigate to the template directory
+# Navigate to template
 cd <template-name>
 
 # Install dependencies
 npm install  # or pnpm install
 
-# Bootstrap CDK (first time only per account/region)
+# Bootstrap CDK (first time only)
 npx cdk bootstrap
-
-# Review changes
-npx cdk diff
 
 # Deploy
 npx cdk deploy
 
-# Cleanup when done
+# Destroy when done
 npx cdk destroy
+```
+
+## Prerequisites
+
+- Node.js 18+
+- AWS CLI v2 configured
+- AWS CDK CLI: `npm install -g aws-cdk`
+- AWS account with appropriate permissions
+
+Some templates use pnpm:
+```bash
+npm install -g pnpm
 ```
 
 ## Authentication
 
-Before deploying, configure AWS credentials:
-
-**Option 1: AWS Configure**
 ```bash
+# Option 1: AWS Configure
 aws configure
-```
 
-**Option 2: Environment Variables**
-```bash
-export AWS_ACCESS_KEY_ID=your-access-key
-export AWS_SECRET_ACCESS_KEY=your-secret-key
+# Option 2: Environment Variables
+export AWS_ACCESS_KEY_ID=your-key
+export AWS_SECRET_ACCESS_KEY=your-secret
 export AWS_DEFAULT_REGION=your-region
-```
 
-**Option 3: SSO Login**
-```bash
+# Option 3: SSO
 aws configure sso
 ```
 
 ## Documentation
 
-Each template includes comprehensive documentation:
-- Architecture diagrams
-- Detailed setup instructions
-- Configuration options
-- Troubleshooting guides
-- Cost estimates
-- Security considerations
+- [docs/TOOLS_OVERVIEW.md](docs/TOOLS_OVERVIEW.md) - Management tools comparison
+- [docs/START_SCRIPT_GUIDE.md](docs/START_SCRIPT_GUIDE.md) - EC2 launcher guide
+- [docs/DESTROY_CDK_GUIDE.md](docs/DESTROY_CDK_GUIDE.md) - Stack destroyer guide
 
-Refer to the individual template READMEs for specific details.
-
-## Cost Management
-
-All templates are designed with cost optimization in mind:
-- Use of ARM Graviton instances where applicable
-- Auto-shutdown capabilities for development workloads
-- Spot instance support for ML workloads
-- Configurable resource sizing
-
-**Remember to destroy resources when not in use:**
-```bash
-npx cdk destroy
-```
-
-## Contributing
-
-This repository is open to expansion. Templates are designed to be:
-- Self-contained and independently deployable
-- Well-documented with clear use cases
-- Cost-optimized for PoC and development use
-- Production-ready with security best practices
+Each template includes detailed READMEs with architecture diagrams, setup instructions, and troubleshooting.
 
 ## License
 
-MIT License
+MIT
