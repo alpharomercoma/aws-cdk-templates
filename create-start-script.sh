@@ -228,15 +228,11 @@ if [ -f "$SCRIPT_PATH" ]; then
     echo ""
 fi
 
-# Optional: SSH config name
-echo -e "${YELLOW}Step 3: SSH Configuration (Optional)${NC}"
-echo "If you want to update SSH config, enter the host marker name."
-read -p "SSH config marker name [default: ${PROJECT_NAME^^}_AWS]: " SSH_MARKER
-SSH_MARKER=${SSH_MARKER:-${PROJECT_NAME^^}_AWS}
-echo ""
+# Set SSH config marker name
+SSH_MARKER="${PROJECT_NAME^^}_AWS"
 
 # Create the start script
-echo -e "${YELLOW}Step 4: Generating Script${NC}"
+echo -e "${YELLOW}Step 3: Generating Script${NC}"
 echo "Creating: $SCRIPT_PATH"
 
 cat > "$SCRIPT_PATH" << 'SCRIPT_END'
@@ -301,12 +297,28 @@ echo -e "${GREEN}✅ Instance is UP!${NC}"
 echo -e "${BLUE}   IP Address: $NEW_IP${NC}"
 echo ""
 
-# 5. UPDATE SSH CONFIG (if markers exist)
-if [ -f "$SSH_CONFIG" ]; then
-    if grep -q "# ${SSH_MARKER}_START" "$SSH_CONFIG" 2>/dev/null; then
-        sed -i "/# ${SSH_MARKER}_START/,/# ${SSH_MARKER}_END/ s/HostName .*/HostName $NEW_IP/" "$SSH_CONFIG"
-        echo -e "${GREEN}✓ SSH config updated${NC}"
-    fi
+# 5. SETUP AND UPDATE SSH CONFIG
+# Ensure SSH config file exists
+mkdir -p "$(dirname "$SSH_CONFIG")"
+touch "$SSH_CONFIG"
+
+# Check if our SSH config block exists
+if ! grep -q "# ${SSH_MARKER}_START" "$SSH_CONFIG" 2>/dev/null; then
+    # Create new SSH config block
+    echo "" >> "$SSH_CONFIG"
+    echo "# ${SSH_MARKER}_START" >> "$SSH_CONFIG"
+    echo "Host $PROJECT_NAME" >> "$SSH_CONFIG"
+    echo "  HostName $NEW_IP" >> "$SSH_CONFIG"
+    echo "  User ubuntu" >> "$SSH_CONFIG"
+    echo "  IdentityFile ~/.ssh/your-key.pem" >> "$SSH_CONFIG"
+    echo "  StrictHostKeyChecking no" >> "$SSH_CONFIG"
+    echo "  UserKnownHostsFile /dev/null" >> "$SSH_CONFIG"
+    echo "# ${SSH_MARKER}_END" >> "$SSH_CONFIG"
+    echo -e "${GREEN}✓ SSH config created${NC}"
+else
+    # Update existing SSH config block
+    sed -i "/# ${SSH_MARKER}_START/,/# ${SSH_MARKER}_END/ s/HostName .*/  HostName $NEW_IP/" "$SSH_CONFIG"
+    echo -e "${GREEN}✓ SSH config updated${NC}"
 fi
 
 # 6. NOTIFY USER
@@ -350,17 +362,13 @@ echo ""
 
 # Instructions
 echo -e "${YELLOW}Next Steps:${NC}"
-echo "1. Run your script anytime with:"
+echo "1. Run your script to start the instance:"
 echo -e "   ${GREEN}$SCRIPT_NAME${NC}"
 echo ""
-echo "2. (Optional) Add SSH config entry between markers:"
-echo "   # ${SSH_MARKER}_START"
-echo "   Host $PROJECT_NAME"
-echo "   HostName <will-be-updated>"
-echo "   User ubuntu"
-echo "   IdentityFile ~/.ssh/your-key.pem"
-echo "   StrictHostKeyChecking no"
-echo "   UserKnownHostsFile /dev/null"
-echo "   # ${SSH_MARKER}_END"
+echo "2. SSH config will be automatically created at ~/.ssh/config"
+echo "   Update the IdentityFile path if needed (default: ~/.ssh/your-key.pem)"
+echo ""
+echo "3. Connect via SSH:"
+echo -e "   ${GREEN}ssh $PROJECT_NAME${NC}"
 echo ""
 echo -e "${GREEN}✨ All done! Your AWS starter is ready.${NC}"

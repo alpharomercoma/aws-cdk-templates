@@ -2,7 +2,7 @@
 
 This tool creates personalized starter scripts for your AWS EC2 instances. Each script is tailored to your project and can be run with a simple keyword command.
 
-**NEW**: The script now automatically discovers your EC2 instances from AWS - no need to manually copy instance IDs!
+**NEW**: Automatic SSH config management! No manual setup required - just run the start script and SSH is configured automatically.
 
 ## Quick Start
 
@@ -14,11 +14,15 @@ This tool creates personalized starter scripts for your AWS EC2 instances. Each 
 2. **Follow the prompts:**
    - Select your EC2 instance from the auto-discovered list
    - Confirm or customize your project name (auto-suggested from instance Name tag)
-   - (Optional) Set SSH config marker name
 
-3. **Use your new starter:**
+3. **Start your instance:**
    ```bash
    start-aws-<your-project-name>
+   ```
+
+4. **Connect via SSH:**
+   ```bash
+   ssh <your-project-name>
    ```
 
 ## Features
@@ -28,7 +32,7 @@ This tool creates personalized starter scripts for your AWS EC2 instances. Each 
 ✅ **Smart naming**: Uses EC2 Name tag or derives from current directory
 ✅ **Safe overwrites**: Prompts before replacing existing scripts (defaults to "no")
 ✅ **Region-aware**: Handles instances in any AWS region
-✅ **SSH integration**: Optionally updates SSH config with new IP
+✅ **Automatic SSH config**: Creates and updates ~/.ssh/config automatically
 ✅ **Desktop notifications**: Visual feedback on Linux desktops (i3, GNOME, etc.)
 ✅ **Clean output**: Simple, straightforward table display
 
@@ -70,11 +74,7 @@ Suggested project name: dev-server
 Use 'dev-server' as project name? [Y/n]: y
 ✓ Project name set to: dev-server
 
-Step 3: SSH Configuration (Optional)
-If you want to update SSH config, enter the host marker name.
-SSH config marker name [default: DEV-SERVER_AWS]:
-
-Step 4: Generating Script
+Step 3: Generating Script
 Creating: /home/user/.local/bin/start-aws-dev-server
 
 ✓ Script created successfully!
@@ -90,18 +90,14 @@ Summary:
 ═══════════════════════════════════════════
 
 Next Steps:
-1. Run your script anytime with:
+1. Run your script to start the instance:
    start-aws-dev-server
 
-2. (Optional) Add SSH config entry between markers:
-   # DEV-SERVER_AWS_START
-   Host dev-server
-   HostName <will-be-updated>
-   User ubuntu
-   IdentityFile ~/.ssh/your-key.pem
-   StrictHostKeyChecking no
-   UserKnownHostsFile /dev/null
-   # DEV-SERVER_AWS_END
+2. SSH config will be automatically created at ~/.ssh/config
+   Update the IdentityFile path if needed (default: ~/.ssh/your-key.pem)
+
+3. Connect via SSH:
+   ssh dev-server
 
 ✨ All done! Your AWS starter is ready.
 ```
@@ -113,28 +109,39 @@ When you run `start-aws-<project>`, it will:
 1. 🚀 Start your EC2 instance in the correct AWS region
 2. ⏳ Wait for the instance to fully boot and pass status checks
 3. 📍 Retrieve the new public IP address
-4. 🔄 Update your SSH config (if markers are present)
+4. 🔄 **Automatically create/update SSH config** at `~/.ssh/config`
 5. 💻 Send desktop notification
 6. ✅ Display connection information
 
 The script is region-aware and will automatically use the correct region for your instance.
 
-## SSH Config Integration (Optional)
+## SSH Config - Automatic Management
 
-To enable automatic IP updates, add this to `~/.ssh/config`:
+**No manual setup required!** The start script automatically:
 
-```
-# YOUR_PROJECT_AWS_START
-Host my-project
-  HostName 1.2.3.4
-  User ubuntu
-  IdentityFile ~/.ssh/my-key.pem
-  StrictHostKeyChecking no
-  UserKnownHostsFile /dev/null
-# YOUR_PROJECT_AWS_END
-```
+1. **Creates** SSH config block on first run:
+   ```
+   # TRAINIUM_AWS_START
+   Host trainium
+     HostName <dynamic-ip>
+     User ubuntu
+     IdentityFile ~/.ssh/your-key.pem
+     StrictHostKeyChecking no
+     UserKnownHostsFile /dev/null
+   # TRAINIUM_AWS_END
+   ```
 
-The marker name is generated automatically (e.g., `DEV-SERVER_AWS` for a project named "dev-server"). The `HostName` line will be automatically updated each time the instance starts with the new public IP.
+2. **Updates** the IP address every time you start the instance
+3. **Preserves** your manual edits (like changing IdentityFile path)
+
+### Customizing SSH Config
+
+After the first run, you can edit `~/.ssh/config` to:
+- Change the key file: `IdentityFile ~/.ssh/my-actual-key.pem`
+- Add SSH options: `ForwardAgent yes`, `LocalForward 8080 localhost:8080`, etc.
+- Change the username: `User ec2-user` (for Amazon Linux)
+
+The script will only update the `HostName` line - your other changes are preserved.
 
 ## Instance Discovery
 

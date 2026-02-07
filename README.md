@@ -10,9 +10,15 @@ Auto-discover and create keyboard-shortcut commands to start EC2 instances.
 ```bash
 ./create-start-script.sh
 # Creates: start-aws-<project-name>
+
+# Start instance and auto-configure SSH
+start-aws-<project-name>
+
+# Connect via SSH (config created automatically)
+ssh <project-name>
 ```
 
-**Features:** Multi-region discovery, auto SSH config updates, desktop notifications
+**Features:** Multi-region discovery, automatic SSH config management, desktop notifications
 
 ### CDK Stack Destroyer
 Interactive tool to safely destroy CDK stacks with confirmation prompts.
