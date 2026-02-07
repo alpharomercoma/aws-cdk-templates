@@ -18,6 +18,22 @@ NC='\033[0m' # No Color
 LOCAL_BIN="$HOME/.local/bin"
 SSH_CONFIG="$HOME/.ssh/config"
 
+# Parse optional arguments (for integration with deploy-cdk-project.sh)
+ARG_INSTANCE_ID=""
+ARG_REGION=""
+ARG_PROJECT_NAME=""
+ARG_SSH_KEY=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --instance-id) ARG_INSTANCE_ID="$2"; shift 2 ;;
+        --region) ARG_REGION="$2"; shift 2 ;;
+        --project-name) ARG_PROJECT_NAME="$2"; shift 2 ;;
+        --ssh-key) ARG_SSH_KEY="$2"; shift 2 ;;
+        *) shift ;;
+    esac
+done
+
 # Ensure ~/.local/bin exists
 mkdir -p "$LOCAL_BIN"
 
@@ -64,6 +80,19 @@ get_all_regions() {
 }
 
 # Query instances
+if [ -n "$ARG_INSTANCE_ID" ] && [ -n "$ARG_REGION" ]; then
+    echo -e "${YELLOW}Step 1: Using Provided Instance${NC}"
+    INSTANCE_ID="$ARG_INSTANCE_ID"
+    SELECTED_REGION="$ARG_REGION"
+    SELECTED_NAME=$(aws ec2 describe-instances --region "$ARG_REGION" --instance-ids "$ARG_INSTANCE_ID" \
+        --query 'Reservations[0].Instances[0].Tags[?Key==`Name`].Value|[0]' --output text 2>/dev/null || echo "(no name)")
+    if [ "$SELECTED_NAME" = "None" ] || [ -z "$SELECTED_NAME" ]; then
+        SELECTED_NAME="(no name)"
+    fi
+    SELECTED_STATE="provided"
+    echo -e "${GREEN}✓ Instance: $INSTANCE_ID in $SELECTED_REGION${NC}"
+    echo ""
+else
 echo -e "${YELLOW}Step 1: Discovering EC2 Instances${NC}"
 echo ""
 read -p "Search all regions? [Y/n] (recommended): " search_all
@@ -173,12 +202,15 @@ SELECTED_REGION="${INSTANCE_REGIONS[$idx]}"
 echo ""
 echo -e "${GREEN}✓ Selected: $SELECTED_NAME ($INSTANCE_ID) in $SELECTED_REGION${NC}"
 echo ""
+fi
 
 # Get project name
 echo -e "${YELLOW}Step 2: Project Configuration${NC}"
 
+if [ -n "$ARG_PROJECT_NAME" ]; then
+    PROJECT_NAME=$(echo "$ARG_PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | tr ' _' '-' | sed 's/[^a-z0-9-]//g')
 # Use instance name as default if available
-if [ "$SELECTED_NAME" != "(no name)" ]; then
+elif [ "$SELECTED_NAME" != "(no name)" ]; then
     DEFAULT_PROJECT_NAME=$(echo "$SELECTED_NAME" | tr '[:upper:]' '[:lower:]' | tr ' _' '-' | sed 's/[^a-z0-9-]//g')
     echo "Suggested project name: $DEFAULT_PROJECT_NAME"
     echo ""
@@ -211,8 +243,12 @@ echo ""
 
 # Ask for SSH key path
 echo -e "${YELLOW}Step 3: SSH Key Configuration${NC}"
-read -p "Enter path to SSH private key [~/.ssh/id_rsa]: " SSH_KEY_PATH
-SSH_KEY_PATH=${SSH_KEY_PATH:-~/.ssh/id_rsa}
+if [ -n "$ARG_SSH_KEY" ]; then
+    SSH_KEY_PATH="$ARG_SSH_KEY"
+else
+    read -p "Enter path to SSH private key [~/.ssh/id_rsa]: " SSH_KEY_PATH
+    SSH_KEY_PATH=${SSH_KEY_PATH:-~/.ssh/id_rsa}
+fi
 echo -e "${GREEN}✓ SSH key: $SSH_KEY_PATH${NC}"
 echo ""
 

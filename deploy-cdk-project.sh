@@ -218,7 +218,8 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
 
         # Check for EC2 instance outputs
         INSTANCE_ID=$(jq -r '.. | select(.InstanceId?) | .InstanceId' "$OUTPUT_FILE" 2>/dev/null || echo "")
-        SSH_KEY_PATH=$(jq -r '.. | select(.SSHKeyPath?) | .SSHKeyPath' "$OUTPUT_FILE" 2>/dev/null || echo "")
+        DEPLOY_REGION=$(jq -r '.. | select(.Region?) | .Region' "$OUTPUT_FILE" 2>/dev/null || echo "")
+        [ -z "$DEPLOY_REGION" ] && DEPLOY_REGION="$REGION"
 
         if [ -n "$INSTANCE_ID" ]; then
             echo -e "${YELLOW}╔═══════════════════════════════════════════╗${NC}"
@@ -226,7 +227,7 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
             echo -e "${YELLOW}╚═══════════════════════════════════════════╝${NC}"
             echo ""
             echo "Instance ID: $INSTANCE_ID"
-            [ -n "$SSH_KEY_PATH" ] && echo "SSH Key: $SSH_KEY_PATH"
+            echo "Region:      $DEPLOY_REGION"
             echo ""
 
             read -p "Create start script for this instance? [Y/n]: " create_starter
@@ -237,10 +238,10 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
                 echo -e "${BLUE}Launching start script generator...${NC}"
                 echo ""
                 cd "$SCRIPT_DIR"
-
-                # If we have the SSH key path, we could pass it as an argument
-                # For now, just run the interactive script
-                ./create-start-script.sh
+                ./create-start-script.sh \
+                    --instance-id "$INSTANCE_ID" \
+                    --region "$DEPLOY_REGION" \
+                    --project-name "$SELECTED_NAME"
             fi
         fi
     fi
