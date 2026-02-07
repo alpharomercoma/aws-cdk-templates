@@ -1,5 +1,3 @@
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cdk from 'aws-cdk-lib/core';
@@ -13,14 +11,15 @@ import { Construct } from 'constructs';
  *
  * Cost Optimization Features:
  * - Spot instance pricing (up to 90% savings vs on-demand)
- * - Aggressive 2-minute inactivity shutdown
+ * - Inactivity auto-shutdown
  * - Minimal storage (50 GiB gp3)
  * - CPU threading optimization (1 thread per core)
  * - Single AZ deployment (no redundancy costs)
  *
- * Auto-Shutdown Mechanisms:
- * 1. CloudWatch Alarm - Stops instance when CPU < 3% for 2 minutes
- * 2. SSH Session Detection - Shuts down after 2 consecutive 1-min checks with no sessions
+ * Auto-Shutdown Mechanism:
+ * - SSH/Activity Detection - Shuts down after 2 consecutive 5-min checks with no sessions
+ *   Includes Neuron-aware checks (neuron processes, device activity, memory usage)
+ *   to avoid false positives during active training when host CPU is idle
  *
  * Trainium1 Specifications (trn1.2xlarge):
  * - 1x Trainium accelerator (16 NeuronCores)
@@ -30,7 +29,6 @@ import { Construct } from 'constructs';
  */
 export class TrainiumSpotStack extends cdk.Stack {
   public readonly launchTemplate: ec2.LaunchTemplate;
-  public readonly cpuAlarm: cloudwatch.Alarm;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -87,7 +85,7 @@ export class TrainiumSpotStack extends cdk.Stack {
     });
 
     // ============================================================
-    // User Data Script - Aggressive 2-minute SSH Inactivity Detection
+    // User Data Script - SSH Inactivity Detection
     // ============================================================
     const userData = ec2.UserData.forLinux();
     userData.addCommands(
@@ -95,11 +93,9 @@ export class TrainiumSpotStack extends cdk.Stack {
       'set -e',
       '',
       '# ============================================================',
-      '# Aggressive SSH Inactivity Auto-Shutdown Script (2 min)',
+      '# SSH Inactivity Auto-Shutdown Script',
       '# ============================================================',
-      '# Optimized for cost savings on expensive Trainium instances.',
-      '# Checks every 1 minute, shuts down after 2 consecutive idle checks.',
-      '# Includes grace period for initial SSH connection.',
+      '# Checks every 5 minutes, shuts down after 2 consecutive idle checks.',
       '# ============================================================',
       '',
       '# Install Neuron SDK for Trainium support',
@@ -116,8 +112,7 @@ export class TrainiumSpotStack extends cdk.Stack {
       'cat > /usr/local/bin/check-ssh-idle.sh << \'SCRIPT\'',
       '#!/bin/bash',
       '',
-      '# Aggressive settings for expensive Trainium instance',
-      'IDLE_THRESHOLD=2           # 2 consecutive checks = 2 min idle',
+      'IDLE_THRESHOLD=2',
       'LOG_FILE="/var/log/autoshutdown.log"',
       'STATE_FILE="/var/run/autoshutdown-idle-count"',
       'LOCK_FILE="/var/run/autoshutdown.lock"',
@@ -125,14 +120,6 @@ export class TrainiumSpotStack extends cdk.Stack {
       '# Use file locking to prevent race conditions',
       'exec 200>"$LOCK_FILE"',
       'flock -n 200 || { echo "$(date): Another check is running, skipping." >> "$LOG_FILE"; exit 0; }',
-      '',
-      '# Boot grace period: skip first 5 minutes after boot to allow initial SSH and system stabilization',
-      '# This also protects against CloudWatch alarm triggering during boot',
-      'UPTIME_SECONDS=$(awk \'{print int($1)}\' /proc/uptime)',
-      'if [ "$UPTIME_SECONDS" -lt 300 ]; then',
-      '    echo "$(date): Boot grace period active (uptime: ${UPTIME_SECONDS}s < 300s). Skipping check." >> "$LOG_FILE"',
-      '    exit 0',
-      'fi',
       '',
       '# Initialize state file if not exists',
       'if [ ! -f "$STATE_FILE" ]; then',
@@ -236,7 +223,7 @@ export class TrainiumSpotStack extends cdk.Stack {
       '        echo "$(date): IDLE THRESHOLD REACHED. Initiating shutdown..." >> "$LOG_FILE"',
       '        # Sync filesystem before shutdown',
       '        sync',
-      '        /sbin/shutdown -h now "Auto-shutdown: No activity for 2+ minutes"',
+      '        /sbin/shutdown -h now "Auto-shutdown: No SSH activity detected"',
       '    fi',
       'else',
       '    echo "0" > "$STATE_FILE"',
@@ -252,22 +239,21 @@ export class TrainiumSpotStack extends cdk.Stack {
       '# Create systemd service',
       'cat > /etc/systemd/system/autoshutdown.service << EOF',
       '[Unit]',
-      'Description=Aggressive inactivity check for Trainium cost optimization',
+      'Description=Check for SSH inactivity and shutdown if idle',
       '',
       '[Service]',
       'Type=oneshot',
       'ExecStart=/usr/local/bin/check-ssh-idle.sh',
       'EOF',
       '',
-      '# Create systemd timer - Check every 1 minute for aggressive shutdown',
+      '# Create systemd timer for periodic checks',
       'cat > /etc/systemd/system/autoshutdown.timer << EOF',
       '[Unit]',
-      'Description=Run inactivity check every 1 minute',
+      'Description=Run SSH inactivity check every 5 minutes',
       '',
       '[Timer]',
-      'OnBootSec=5min',
-      'OnUnitActiveSec=1min',
-      'AccuracySec=10s',
+      'OnBootSec=10min',
+      'OnUnitActiveSec=5min',
       'Unit=autoshutdown.service',
       '',
       '[Install]',
@@ -280,11 +266,9 @@ export class TrainiumSpotStack extends cdk.Stack {
       'systemctl start autoshutdown.timer',
       '',
       '# Initialize log file',
-      'echo "$(date): Trainium Auto-Shutdown Initialized" > /var/log/autoshutdown.log',
-      'echo "$(date): Mode: AGGRESSIVE (2 min inactivity)" >> /var/log/autoshutdown.log',
-      'echo "$(date): Check interval: 1 minute" >> /var/log/autoshutdown.log',
-      'echo "$(date): Boot grace period: 5 minutes" >> /var/log/autoshutdown.log',
-      'echo "$(date): Activity detection: SSH, SSM, Screen/Tmux, Neuron, ML procs, CPU, Memory" >> /var/log/autoshutdown.log',
+      'echo "$(date): Auto-shutdown monitoring initialized" > /var/log/autoshutdown.log',
+      'echo "$(date): Idle threshold: 2 checks (10 minutes)" >> /var/log/autoshutdown.log',
+      'echo "$(date): Check interval: 5 minutes" >> /var/log/autoshutdown.log',
     );
 
     // ============================================================
@@ -313,9 +297,6 @@ export class TrainiumSpotStack extends cdk.Stack {
 
       // User data for auto-shutdown
       userData,
-
-      // Enable detailed monitoring for fast CloudWatch alarm response
-      detailedMonitoring: true,
 
       // 50 GiB gp3 storage - minimal but sufficient
       blockDevices: [
@@ -370,36 +351,11 @@ export class TrainiumSpotStack extends cdk.Stack {
       ],
     });
 
-    // ============================================================
-    // CloudWatch Alarm - Aggressive CPU-based Auto-Stop
-    // ============================================================
-    // Stop instance when CPU < 3% for 3 minutes (3 x 1-min periods)
-    // Using 3 periods provides boot protection while remaining aggressive
-    // Trainium instances can cost $1.34/hr+ so aggressive shutdown is critical
-    this.cpuAlarm = new cloudwatch.Alarm(this, 'CpuIdleAlarm', {
-      alarmName: `${this.stackName}-cpu-idle-alarm`,
-      alarmDescription:
-        'Stop Trainium instance when CPU < 3% for 3 minutes (cost optimization)',
-      metric: new cloudwatch.Metric({
-        namespace: 'AWS/EC2',
-        metricName: 'CPUUtilization',
-        dimensionsMap: {
-          InstanceId: instance.ref,
-        },
-        statistic: 'Average',
-        period: cdk.Duration.minutes(1), // 1-minute periods for fast response
-      }),
-      threshold: 3, // Very low threshold for Trainium
-      evaluationPeriods: 3, // 3 x 1-min = 3 minutes total (boot protection)
-      datapointsToAlarm: 3, // Require all 3 datapoints to be below threshold
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    // Add EC2 stop action
-    this.cpuAlarm.addAlarmAction(
-      new cloudwatchActions.Ec2Action(cloudwatchActions.Ec2InstanceAction.STOP)
-    );
+    // NOTE: No CloudWatch CPU alarm for Trainium instances.
+    // During active training, compute is offloaded to NeuronCores while host CPU
+    // idles below 5%, which would cause a CPU-based alarm to stop the instance
+    // mid-training. The SSH idle detection script handles inactivity detection
+    // with Neuron-aware checks (neuron processes, neuron-top, memory usage).
 
     // ============================================================
     // Outputs
@@ -420,13 +376,8 @@ export class TrainiumSpotStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'AutoShutdownConfig', {
-      value: '2 minutes inactivity (1-min checks)',
-      description: 'Aggressive auto-shutdown configuration',
-    });
-
-    new cdk.CfnOutput(this, 'AlarmArn', {
-      value: this.cpuAlarm.alarmArn,
-      description: 'CloudWatch Alarm ARN for CPU idle detection',
+      value: '10 minutes inactivity (5-min checks)',
+      description: 'Auto-shutdown configuration',
     });
 
     new cdk.CfnOutput(this, 'KeyPairId', {
@@ -460,7 +411,7 @@ export class TrainiumSpotStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'CostOptimizationSummary', {
-      value: 'Spot pricing + 2-min shutdown + minimal storage + reduced CPU threads',
+      value: 'Spot pricing + 10-min idle timeout + minimal storage + reduced CPU threads',
       description: 'Cost optimization features enabled',
     });
   }

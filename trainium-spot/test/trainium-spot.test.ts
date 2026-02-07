@@ -100,16 +100,6 @@ describe('TrainiumSpotStack', () => {
       });
     });
 
-    test('enables detailed monitoring', () => {
-      template.hasResourceProperties('AWS::EC2::LaunchTemplate', {
-        LaunchTemplateData: Match.objectLike({
-          Monitoring: {
-            Enabled: true,
-          },
-        }),
-      });
-    });
-
     test('includes user data for auto-shutdown', () => {
       template.hasResourceProperties('AWS::EC2::LaunchTemplate', {
         LaunchTemplateData: Match.objectLike({
@@ -139,40 +129,9 @@ describe('TrainiumSpotStack', () => {
     });
   });
 
-  describe('CloudWatch Alarm Configuration', () => {
-    test('creates CPU idle alarm with aggressive thresholds', () => {
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        MetricName: 'CPUUtilization',
-        Namespace: 'AWS/EC2',
-        Threshold: 3,
-        EvaluationPeriods: 3,
-        DatapointsToAlarm: 3,
-        Period: 60, // 1 minute
-        ComparisonOperator: 'LessThanThreshold',
-        Statistic: 'Average',
-      });
-    });
-
-    test('alarm has EC2 stop action', () => {
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        AlarmActions: Match.arrayWith([
-          Match.objectLike({
-            'Fn::Join': Match.anyValue(),
-          }),
-        ]),
-      });
-      // Verify the alarm action contains the stop action by checking the full template
-      const alarms = template.findResources('AWS::CloudWatch::Alarm');
-      const alarmKeys = Object.keys(alarms);
-      expect(alarmKeys.length).toBe(1);
-      const alarmAction = JSON.stringify(alarms[alarmKeys[0]].Properties.AlarmActions);
-      expect(alarmAction).toContain('ec2:stop');
-    });
-
-    test('alarm treats missing data as not breaching', () => {
-      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
-        TreatMissingData: 'notBreaching',
-      });
+  describe('No CloudWatch Alarm', () => {
+    test('does not create a CloudWatch CPU alarm (would stop instance during active training)', () => {
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 0);
     });
   });
 
@@ -205,10 +164,6 @@ describe('TrainiumSpotStack', () => {
       template.hasOutput('InstanceId', {});
     });
 
-    test('exports alarm ARN', () => {
-      template.hasOutput('AlarmArn', {});
-    });
-
     test('exports key pair ID', () => {
       template.hasOutput('KeyPairId', {});
     });
@@ -219,7 +174,7 @@ describe('TrainiumSpotStack', () => {
 
     test('exports cost optimization summary', () => {
       template.hasOutput('CostOptimizationSummary', {
-        Value: 'Spot pricing + 2-min shutdown + minimal storage + reduced CPU threads',
+        Value: 'Spot pricing + 10-min idle timeout + minimal storage + reduced CPU threads',
       });
     });
   });
