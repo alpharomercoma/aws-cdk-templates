@@ -435,8 +435,18 @@ export class TrainiumSpotStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'GetPrivateKeyCommand', {
-      value: `aws ssm get-parameter --name /ec2/keypair/${keyPair.keyPairId} --region us-east-2 --with-decryption --query Parameter.Value --output text > ~/.ssh/${this.stackName}-keypair.pem && chmod 400 ~/.ssh/${this.stackName}-keypair.pem`,
+      value: `aws ssm get-parameter --name /ec2/keypair/${keyPair.keyPairId} --region ${this.region} --with-decryption --query Parameter.Value --output text > ~/.ssh/${this.stackName}-keypair.pem && chmod 400 ~/.ssh/${this.stackName}-keypair.pem`,
       description: 'Command to retrieve private key from SSM Parameter Store',
+    });
+
+    new cdk.CfnOutput(this, 'KeyPairName', {
+      value: keyPair.keyPairName!,
+      description: 'EC2 Key Pair Name',
+    });
+
+    new cdk.CfnOutput(this, 'Region', {
+      value: this.region,
+      description: 'Deployment region',
     });
 
     new cdk.CfnOutput(this, 'LaunchTemplateId', {

@@ -72,15 +72,24 @@ Log File: /var/log/autoshutdown.log
 - **Restart**: Simply start the instance again when needed via AWS Console, CLI, or API
 
 **Start a stopped instance via CLI:**
+
 ```bash
-aws ec2 start-instances --instance-ids <INSTANCE_ID> --region ap-southeast-1
+# Set your region
+export AWS_REGION=ap-southeast-1
+
+# Option 1: If you know the instance ID
+aws ec2 start-instances --instance-ids <INSTANCE_ID> --region $AWS_REGION
+
+# Option 2: Start using the instance name tag
+export INSTANCE_ID=$(aws ec2 describe-instances --region $AWS_REGION --filters "Name=tag:Name,Values=Ec2AutoshutdownStack-instance" --query 'Reservations[0].Instances[0].InstanceId' --output text)
+aws ec2 start-instances --instance-ids $INSTANCE_ID --region $AWS_REGION
+
+# Wait for instance to be running and get the new public IP
+aws ec2 wait instance-running --instance-ids $INSTANCE_ID --region $AWS_REGION
+aws ec2 describe-instances --region $AWS_REGION --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].PublicIpAddress' --output text
 ```
 
-**Note:** The public IP address changes each time the instance restarts. After starting, get the new IP:
-```bash
-aws ec2 describe-instances --instance-ids <INSTANCE_ID> --region ap-southeast-1 \
-  --query "Reservations[].Instances[].PublicIpAddress" --output text
-```
+**Note:** The public IP address changes each time the instance restarts.
 
 ## Architecture
 
@@ -199,12 +208,54 @@ export AWS_DEFAULT_REGION=ap-southeast-1
 
 The stack automatically creates an ED25519 key pair and stores the private key securely in AWS Systems Manager Parameter Store.
 
-**Step 1: Retrieve the private key**
+#### Step 1: Get the Key Pair ID
 
-After deployment, run the command from the `GetPrivateKeyCommand` output:
+After deployment, retrieve the Key Pair ID:
+
 ```bash
+# Set your region
+export AWS_REGION=ap-southeast-1
+
+# Get the Key Pair ID
+aws ec2 describe-key-pairs \
+  --region $AWS_REGION \
+  --query "KeyPairs[?KeyName=='Ec2AutoshutdownStack-keypair'].[KeyPairId]" \
+  --output text
+```
+
+This will output something like: `key-0a1b2c3d4e5f6g7h8`
+
+Alternatively, you can list all key pairs to find yours:
+
+```bash
+aws ec2 describe-key-pairs \
+  --region $AWS_REGION \
+  --query "KeyPairs[*].[KeyName,KeyPairId]" \
+  --output table
+```
+
+Look for `Ec2AutoshutdownStack-keypair` and note its Key Pair ID.
+
+#### Step 2: Retrieve the Private Key
+
+Using the Key Pair ID from Step 1:
+
+```bash
+# Replace <KEY_PAIR_ID> with the value from Step 1
 aws ssm get-parameter \
   --name /ec2/keypair/<KEY_PAIR_ID> \
+  --region $AWS_REGION \
+  --with-decryption \
+  --query Parameter.Value \
+  --output text > ~/.ssh/Ec2AutoshutdownStack-keypair.pem
+
+chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
+```
+
+**Example with actual Key Pair ID:**
+```bash
+aws ssm get-parameter \
+  --name /ec2/keypair/key-0a1b2c3d4e5f6g7h8 \
   --region ap-southeast-1 \
   --with-decryption \
   --query Parameter.Value \
@@ -213,19 +264,63 @@ aws ssm get-parameter \
 chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
 ```
 
-**Step 2: Connect via SSH**
+#### Step 3: Get the Instance Public IP or DNS
 
-Use the command from the `SshCommand` output:
 ```bash
+# Get instance public IP
+aws ec2 describe-instances \
+  --region $AWS_REGION \
+  --filters "Name=tag:Name,Values=Ec2AutoshutdownStack-instance" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[0].Instances[0].PublicIpAddress' \
+  --output text
+```
+
+Or get the public DNS name:
+```bash
+aws ec2 describe-instances \
+  --region $AWS_REGION \
+  --filters "Name=tag:Name,Values=Ec2AutoshutdownStack-instance" "Name=instance-state-name,Values=running" \
+  --query 'Reservations[0].Instances[0].PublicDnsName' \
+  --output text
+```
+
+#### Step 4: Connect via SSH
+
+```bash
+# Using public IP
+ssh -i ~/.ssh/Ec2AutoshutdownStack-keypair.pem ubuntu@<PUBLIC_IP>
+
+# Or using public DNS
 ssh -i ~/.ssh/Ec2AutoshutdownStack-keypair.pem ubuntu@<PUBLIC_DNS_NAME>
 ```
 
-**Troubleshooting: "Permissions are too open" error**
+#### Quick Reference: One-Liner Commands
 
-If you see `WARNING: UNPROTECTED PRIVATE KEY FILE!`, fix the permissions:
 ```bash
-chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
+# Set region
+export AWS_REGION=ap-southeast-1
+
+# Get Key Pair ID and save to variable
+export KEY_PAIR_ID=$(aws ec2 describe-key-pairs --region $AWS_REGION --query "KeyPairs[?KeyName=='Ec2AutoshutdownStack-keypair'].[KeyPairId]" --output text)
+
+# Download private key
+aws ssm get-parameter --name /ec2/keypair/$KEY_PAIR_ID --region $AWS_REGION --with-decryption --query Parameter.Value --output text > ~/.ssh/Ec2AutoshutdownStack-keypair.pem && chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
+
+# Get instance public IP
+export INSTANCE_IP=$(aws ec2 describe-instances --region $AWS_REGION --filters "Name=tag:Name,Values=Ec2AutoshutdownStack-instance" "Name=instance-state-name,Values=running" --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
+
+# SSH to instance
+ssh -i ~/.ssh/Ec2AutoshutdownStack-keypair.pem ubuntu@$INSTANCE_IP
 ```
+
+**Troubleshooting:**
+
+- **"ParameterNotFound" error**: You're using the wrong Key Pair ID. Run Step 1 again to get the correct ID.
+- **"Permissions are too open" error**: If you see `WARNING: UNPROTECTED PRIVATE KEY FILE!`, fix the permissions:
+  ```bash
+  chmod 400 ~/.ssh/Ec2AutoshutdownStack-keypair.pem
+  ```
+- **"Permission denied (publickey)"**: Verify you're using the correct key file and IP/DNS address.
 
 ### Option 2: AWS Systems Manager Session Manager
 
@@ -321,7 +416,16 @@ Remove or comment out the `userData.addCommands(...)` section if you only want C
 To avoid ongoing charges, destroy the stack when no longer needed:
 
 ```bash
+# Set your region if needed
+export AWS_REGION=ap-southeast-1
+
+# Destroy the stack
 cdk destroy
+
+# Optional: Verify cleanup
+aws cloudformation describe-stacks \
+  --stack-name Ec2AutoshutdownStack \
+  --region $AWS_REGION 2>&1 | grep -q "does not exist" && echo "Stack successfully deleted" || echo "Stack still exists"
 ```
 
 This will terminate the EC2 instance and delete all associated resources including the VPC, security groups, and CloudWatch alarm.

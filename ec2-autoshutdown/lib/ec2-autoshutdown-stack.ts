@@ -83,6 +83,7 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       description: 'Role for EC2 instance with SSM access',
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'),
       ],
     });
 
@@ -292,14 +293,24 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       description: 'EC2 Key Pair ID',
     });
 
+    new cdk.CfnOutput(this, 'KeyPairName', {
+      value: keyPair.keyPairName!,
+      description: 'EC2 Key Pair Name',
+    });
+
     new cdk.CfnOutput(this, 'GetPrivateKeyCommand', {
-      value: `aws ssm get-parameter --name /ec2/keypair/${keyPair.keyPairId} --region ap-southeast-1 --with-decryption --query Parameter.Value --output text > ~/.ssh/${this.stackName}-keypair.pem && chmod 400 ~/.ssh/${this.stackName}-keypair.pem`,
+      value: `aws ssm get-parameter --name /ec2/keypair/${keyPair.keyPairId} --region ${this.region} --with-decryption --query Parameter.Value --output text > ~/.ssh/${this.stackName}-keypair.pem && chmod 400 ~/.ssh/${this.stackName}-keypair.pem`,
       description: 'Command to retrieve private key from SSM Parameter Store',
     });
 
     new cdk.CfnOutput(this, 'SshCommand', {
       value: `ssh -i ~/.ssh/${this.stackName}-keypair.pem ubuntu@${this.instance.instancePublicDnsName}`,
       description: 'SSH command to connect to the instance',
+    });
+
+    new cdk.CfnOutput(this, 'Region', {
+      value: this.region,
+      description: 'Deployment region',
     });
   }
 }
