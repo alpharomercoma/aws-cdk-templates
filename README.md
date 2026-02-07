@@ -1,6 +1,52 @@
 # AWS CDK Templates
 
-A collection of production-ready AWS CDK templates for common infrastructure patterns and use cases.
+Collection of AWS CDK infrastructure templates and utilities.
+
+## 🚀 Quick Start: EC2 Instance Launcher
+
+This repo includes an **AWS EC2 Start Script Generator** that automatically discovers your EC2 instances and creates keyboard-shortcut-friendly launch scripts.
+
+### Features
+
+- 🔍 **Auto-discovers** your EC2 instances from AWS
+- 🌍 **Multi-region** support
+- 🏷️ **Smart naming** from instance Name tags
+- ⚡ **One-command** instance startup
+- 🔐 **SSH config** auto-update with dynamic IPs
+- 💻 **Desktop notifications**
+
+### Usage
+
+```bash
+# Generate a starter script
+./create-start-script.sh
+
+# Then use your custom command
+start-aws-<your-project>
+```
+
+See [START_SCRIPT_GUIDE.md](START_SCRIPT_GUIDE.md) for complete documentation.
+
+## Projects
+
+### [trainium-spot](trainium-spot/)
+Trainium Spot instance deployment
+
+### [ec2-autoshutdown](ec2-autoshutdown/)
+EC2 automatic shutdown scheduler
+
+### [aws-3tier-app](aws-3tier-app/)
+3-tier application infrastructure
+
+### [aws-infra-poc](aws-infra-poc/)
+Static + Dynamic Python server with S3 integration
+
+## Requirements
+
+- Node.js 18+
+- AWS CDK CLI: `npm install -g aws-cdk`
+- AWS CLI configured with credentials
+- Appropriate IAM permissions
 
 ## Available Templates
 

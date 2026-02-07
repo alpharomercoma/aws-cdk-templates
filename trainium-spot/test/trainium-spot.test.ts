@@ -1,5 +1,5 @@
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as cdk from 'aws-cdk-lib/core';
-import { Template, Match } from 'aws-cdk-lib/assertions';
 import { TrainiumSpotStack } from '../lib/trainium-spot-stack';
 
 describe('TrainiumSpotStack', () => {
