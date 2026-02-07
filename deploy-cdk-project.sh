@@ -239,6 +239,8 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
             if [ -n "$GET_KEY_CMD" ] && [ -n "$KEY_PAIR_NAME" ]; then
                 SSH_KEY_FILE="$HOME/.ssh/${KEY_PAIR_NAME}.pem"
                 # Always re-download the key to ensure freshness after deploy
+                # Remove read-only key from previous deploy so redirect can overwrite
+                [ -f "$SSH_KEY_FILE" ] && chmod 600 "$SSH_KEY_FILE"
                 echo -e "${YELLOW}Downloading SSH key from AWS SSM...${NC}"
                 if eval "$GET_KEY_CMD"; then
                     echo -e "${GREEN}✓ SSH key saved: $SSH_KEY_FILE${NC}"
