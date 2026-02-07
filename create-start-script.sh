@@ -209,6 +209,13 @@ fi
 echo -e "${GREEN}✓ Project name set to: $PROJECT_NAME${NC}"
 echo ""
 
+# Ask for SSH key path
+echo -e "${YELLOW}Step 3: SSH Key Configuration${NC}"
+read -p "Enter path to SSH private key [~/.ssh/id_rsa]: " SSH_KEY_PATH
+SSH_KEY_PATH=${SSH_KEY_PATH:-~/.ssh/id_rsa}
+echo -e "${GREEN}✓ SSH key: $SSH_KEY_PATH${NC}"
+echo ""
+
 # Define script name and path
 SCRIPT_NAME="start-aws-${PROJECT_NAME}"
 SCRIPT_PATH="$LOCAL_BIN/$SCRIPT_NAME"
@@ -232,7 +239,7 @@ fi
 SSH_MARKER="${PROJECT_NAME^^}_AWS"
 
 # Create the start script
-echo -e "${YELLOW}Step 3: Generating Script${NC}"
+echo -e "${YELLOW}Step 4: Generating Script${NC}"
 echo "Creating: $SCRIPT_PATH"
 
 cat > "$SCRIPT_PATH" << 'SCRIPT_END'
@@ -247,6 +254,7 @@ cat > "$SCRIPT_PATH" << 'SCRIPT_END'
 INSTANCE_ID="INSTANCE_ID_PLACEHOLDER"
 AWS_REGION="AWS_REGION_PLACEHOLDER"
 PROJECT_NAME="PROJECT_NAME_PLACEHOLDER"
+SSH_KEY_PATH="SSH_KEY_PATH_PLACEHOLDER"
 SSH_CONFIG="$HOME/.ssh/config"
 SSH_MARKER="SSH_MARKER_PLACEHOLDER"
 
@@ -310,7 +318,7 @@ if ! grep -q "# ${SSH_MARKER}_START" "$SSH_CONFIG" 2>/dev/null; then
     echo "Host $PROJECT_NAME" >> "$SSH_CONFIG"
     echo "  HostName $NEW_IP" >> "$SSH_CONFIG"
     echo "  User ubuntu" >> "$SSH_CONFIG"
-    echo "  IdentityFile ~/.ssh/your-key.pem" >> "$SSH_CONFIG"
+    echo "  IdentityFile $SSH_KEY_PATH" >> "$SSH_CONFIG"
     echo "  StrictHostKeyChecking no" >> "$SSH_CONFIG"
     echo "  UserKnownHostsFile /dev/null" >> "$SSH_CONFIG"
     echo "# ${SSH_MARKER}_END" >> "$SSH_CONFIG"
@@ -341,6 +349,7 @@ sed -i "s/INSTANCE_ID_PLACEHOLDER/$INSTANCE_ID/" "$SCRIPT_PATH"
 sed -i "s/AWS_REGION_PLACEHOLDER/$SELECTED_REGION/" "$SCRIPT_PATH"
 sed -i "s/PROJECT_NAME_PLACEHOLDER/$PROJECT_NAME/" "$SCRIPT_PATH"
 sed -i "s/SSH_MARKER_PLACEHOLDER/$SSH_MARKER/" "$SCRIPT_PATH"
+sed -i "s|SSH_KEY_PATH_PLACEHOLDER|$SSH_KEY_PATH|" "$SCRIPT_PATH"
 
 # Make executable
 chmod +x "$SCRIPT_PATH"
@@ -351,24 +360,10 @@ echo ""
 # Summary
 echo -e "${BLUE}═══════════════════════════════════════════${NC}"
 echo -e "${GREEN}Summary:${NC}"
-echo "  Script name:    $SCRIPT_NAME"
-echo "  Location:       $SCRIPT_PATH"
-echo "  Instance ID:    $INSTANCE_ID"
-echo "  Region:         $SELECTED_REGION"
-echo "  Project name:   $PROJECT_NAME"
-echo "  SSH marker:     $SSH_MARKER"
+echo "  Script:         $SCRIPT_NAME"
+echo "  Instance:       $INSTANCE_ID ($SELECTED_REGION)"
+echo "  SSH key:        $SSH_KEY_PATH"
+echo "  SSH host:       ssh $PROJECT_NAME"
 echo -e "${BLUE}═══════════════════════════════════════════${NC}"
 echo ""
-
-# Instructions
-echo -e "${YELLOW}Next Steps:${NC}"
-echo "1. Run your script to start the instance:"
-echo -e "   ${GREEN}$SCRIPT_NAME${NC}"
-echo ""
-echo "2. SSH config will be automatically created at ~/.ssh/config"
-echo "   Update the IdentityFile path if needed (default: ~/.ssh/your-key.pem)"
-echo ""
-echo "3. Connect via SSH:"
-echo -e "   ${GREEN}ssh $PROJECT_NAME${NC}"
-echo ""
-echo -e "${GREEN}✨ All done! Your AWS starter is ready.${NC}"
+echo -e "${GREEN}✨ Ready! Run: $SCRIPT_NAME${NC}"

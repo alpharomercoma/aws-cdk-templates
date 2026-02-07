@@ -105,11 +105,7 @@ aws configure sso
 
 ## Documentation
 
-- [docs/TOOLS_OVERVIEW.md](docs/TOOLS_OVERVIEW.md) - Management tools comparison
-- [docs/START_SCRIPT_GUIDE.md](docs/START_SCRIPT_GUIDE.md) - EC2 launcher guide
-- [docs/DESTROY_CDK_GUIDE.md](docs/DESTROY_CDK_GUIDE.md) - Stack destroyer guide
-
-Each template includes detailed READMEs with architecture diagrams, setup instructions, and troubleshooting.
+See [docs/](docs/) for management tools guides. Each CDK template has its own README with architecture and setup instructions.
 
 ## License
 
