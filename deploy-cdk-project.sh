@@ -222,6 +222,7 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
         [ -z "$DEPLOY_REGION" ] && DEPLOY_REGION="$REGION"
         GET_KEY_CMD=$(jq -r '.. | select(.GetPrivateKeyCommand?) | .GetPrivateKeyCommand' "$OUTPUT_FILE" 2>/dev/null || echo "")
         KEY_PAIR_NAME=$(jq -r '.. | select(.KeyPairName?) | .KeyPairName' "$OUTPUT_FILE" 2>/dev/null || echo "")
+        KEY_PAIR_ID=$(jq -r '.. | select(.KeyPairId?) | .KeyPairId' "$OUTPUT_FILE" 2>/dev/null || echo "")
 
         if [ -n "$INSTANCE_ID" ]; then
             echo -e "${YELLOW}╔═══════════════════════════════════════════╗${NC}"
@@ -234,20 +235,19 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
 
             # Download SSH key from SSM if available
             SSH_KEY_ARG=""
+            SSH_KEY_ID_ARG=""
             if [ -n "$GET_KEY_CMD" ] && [ -n "$KEY_PAIR_NAME" ]; then
                 SSH_KEY_FILE="$HOME/.ssh/${KEY_PAIR_NAME}.pem"
-                if [ -f "$SSH_KEY_FILE" ]; then
-                    echo -e "${GREEN}✓ SSH key already exists: $SSH_KEY_FILE${NC}"
+                # Always re-download the key to ensure freshness after deploy
+                echo -e "${YELLOW}Downloading SSH key from AWS SSM...${NC}"
+                if eval "$GET_KEY_CMD"; then
+                    echo -e "${GREEN}✓ SSH key saved: $SSH_KEY_FILE${NC}"
                 else
-                    echo -e "${YELLOW}Downloading SSH key from AWS SSM...${NC}"
-                    if eval "$GET_KEY_CMD"; then
-                        echo -e "${GREEN}✓ SSH key saved: $SSH_KEY_FILE${NC}"
-                    else
-                        echo -e "${RED}Failed to download SSH key. You can run manually:${NC}"
-                        echo "  $GET_KEY_CMD"
-                    fi
+                    echo -e "${RED}Failed to download SSH key. You can run manually:${NC}"
+                    echo "  $GET_KEY_CMD"
                 fi
                 [ -f "$SSH_KEY_FILE" ] && SSH_KEY_ARG="--ssh-key $SSH_KEY_FILE"
+                [ -n "$KEY_PAIR_ID" ] && SSH_KEY_ID_ARG="--ssh-key-id $KEY_PAIR_ID"
                 echo ""
             fi
 
@@ -263,7 +263,8 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
                     --instance-id "$INSTANCE_ID" \
                     --region "$DEPLOY_REGION" \
                     --project-name "$SELECTED_NAME" \
-                    $SSH_KEY_ARG
+                    $SSH_KEY_ARG \
+                    $SSH_KEY_ID_ARG
             fi
         fi
     fi
