@@ -220,6 +220,8 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
         INSTANCE_ID=$(jq -r '.. | select(.InstanceId?) | .InstanceId' "$OUTPUT_FILE" 2>/dev/null || echo "")
         DEPLOY_REGION=$(jq -r '.. | select(.Region?) | .Region' "$OUTPUT_FILE" 2>/dev/null || echo "")
         [ -z "$DEPLOY_REGION" ] && DEPLOY_REGION="$REGION"
+        GET_KEY_CMD=$(jq -r '.. | select(.GetPrivateKeyCommand?) | .GetPrivateKeyCommand' "$OUTPUT_FILE" 2>/dev/null || echo "")
+        KEY_PAIR_NAME=$(jq -r '.. | select(.KeyPairName?) | .KeyPairName' "$OUTPUT_FILE" 2>/dev/null || echo "")
 
         if [ -n "$INSTANCE_ID" ]; then
             echo -e "${YELLOW}╔═══════════════════════════════════════════╗${NC}"
@@ -229,6 +231,25 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
             echo "Instance ID: $INSTANCE_ID"
             echo "Region:      $DEPLOY_REGION"
             echo ""
+
+            # Download SSH key from SSM if available
+            SSH_KEY_ARG=""
+            if [ -n "$GET_KEY_CMD" ] && [ -n "$KEY_PAIR_NAME" ]; then
+                SSH_KEY_FILE="$HOME/.ssh/${KEY_PAIR_NAME}.pem"
+                if [ -f "$SSH_KEY_FILE" ]; then
+                    echo -e "${GREEN}✓ SSH key already exists: $SSH_KEY_FILE${NC}"
+                else
+                    echo -e "${YELLOW}Downloading SSH key from AWS SSM...${NC}"
+                    if eval "$GET_KEY_CMD"; then
+                        echo -e "${GREEN}✓ SSH key saved: $SSH_KEY_FILE${NC}"
+                    else
+                        echo -e "${RED}Failed to download SSH key. You can run manually:${NC}"
+                        echo "  $GET_KEY_CMD"
+                    fi
+                fi
+                [ -f "$SSH_KEY_FILE" ] && SSH_KEY_ARG="--ssh-key $SSH_KEY_FILE"
+                echo ""
+            fi
 
             read -p "Create start script for this instance? [Y/n]: " create_starter
             create_starter=${create_starter:-Y}
@@ -241,7 +262,8 @@ if cdk deploy --require-approval never --outputs-file "$OUTPUT_FILE"; then
                 ./create-start-script.sh \
                     --instance-id "$INSTANCE_ID" \
                     --region "$DEPLOY_REGION" \
-                    --project-name "$SELECTED_NAME"
+                    --project-name "$SELECTED_NAME" \
+                    $SSH_KEY_ARG
             fi
         fi
     fi
