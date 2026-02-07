@@ -1,5 +1,30 @@
 # Management Tools
 
+## CDK Template Deployer
+
+**Purpose**: Deploy any CDK template with guided setup
+
+**Script**: `deploy-cdk-project.sh`
+
+**Workflow**:
+```bash
+./deploy-cdk-project.sh      # Select template
+# → Install dependencies
+# → Review changes
+# → Deploy
+# → (EC2) Auto-create starter
+```
+
+**Features**:
+- Auto-discovers templates
+- Handles dependencies + bootstrap
+- Shows diff before deploy
+- EC2 integration (auto-starts create-start-script.sh)
+
+**Use Case**: Initial deployment, testing templates
+
+---
+
 ## EC2 Instance Launcher
 
 **Purpose**: Start EC2 instances with one command + automatic SSH
@@ -8,7 +33,7 @@
 
 **Workflow**:
 ```bash
-./create-start-script.sh    # Setup
+./create-start-script.sh     # Setup once
 start-aws-myproject          # Start + configure
 ssh myproject                # Connect
 ```
@@ -49,21 +74,48 @@ ssh myproject                # Connect
 
 ## Quick Comparison
 
-| Feature | EC2 Launcher | CDK Destroyer |
-|---------|--------------|---------------|
-| Destructive | No | Yes ⚠️ |
-| Frequency | Daily | Rarely |
-| Confirmations | None | 2 required |
-| Auto-discovery | EC2 instances | CDK projects |
-| Requirements | AWS CLI | AWS CLI + CDK CLI |
+| Feature | Deployer | EC2 Launcher | Destroyer |
+|---------|----------|--------------|-----------|
+| Purpose | Deploy | Start/SSH | Destroy |
+| Destructive | No | No | Yes ⚠️ |
+| Frequency | Once | Daily | Rarely |
+| Confirmations | 1 | None | 2 |
+| Auto-discovery | Templates | Instances | Projects |
+| EC2 Integration | Yes | N/A | No |
+| Requirements | CDK CLI | AWS CLI | CDK CLI |
+
+---
+
+## Complete Workflow
+
+```bash
+# 1. Deploy a template
+./deploy-cdk-project.sh
+# → Select ec2-autoshutdown
+# → Deploys + creates starter automatically
+
+# 2. Daily usage
+start-aws-ec2-autoshutdown   # Start instance
+ssh ec2-autoshutdown         # Connect
+
+# 3. Cleanup
+./destroy-cdk-project.sh
+# → Select ec2-autoshutdown
+# → Destroys everything
+```
 
 ---
 
 ## Getting Started
 
-1. Choose your tool based on needs
-2. Read the specific guide:
+1. Choose your tool:
+   - **New deployment?** → Use Deployer
+   - **Existing instance?** → Use EC2 Launcher
+   - **Clean up?** → Use Destroyer
+
+2. Read the guide:
+   - [Deployer Guide](DEPLOY_CDK_GUIDE.md)
    - [EC2 Launcher Guide](START_SCRIPT_GUIDE.md)
    - [Destroyer Guide](DESTROY_CDK_GUIDE.md)
-3. Run the script
-4. Follow the prompts
+
+3. Run and follow prompts

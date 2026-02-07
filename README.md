@@ -4,24 +4,31 @@ Collection of AWS CDK infrastructure templates and management utilities.
 
 ## Management Tools
 
-### EC2 Instance Launcher
-Auto-discover and create keyboard-shortcut commands to start EC2 instances.
+### 🚀 Deploy CDK Template
+Deploy any CDK template with guided prompts.
+
+```bash
+./deploy-cdk-project.sh
+# Select template → install deps → deploy → optionally create start script
+```
+
+**Features:** Auto-discovery, dependency management, CDK bootstrap check, EC2 integration
+
+### 💻 EC2 Instance Launcher
+Create one-command starters for EC2 instances (works with deployed templates).
 
 ```bash
 ./create-start-script.sh
 # Creates: start-aws-<project-name>
 
-# Start instance and auto-configure SSH
-start-aws-<project-name>
-
-# Connect via SSH (config created automatically)
-ssh <project-name>
+start-aws-<project-name>  # Start + auto-configure SSH
+ssh <project-name>         # Connect
 ```
 
-**Features:** Multi-region discovery, automatic SSH config management, desktop notifications
+**Features:** Multi-region discovery, automatic SSH config, desktop notifications
 
-### CDK Stack Destroyer
-Interactive tool to safely destroy CDK stacks with confirmation prompts.
+### 🔥 Destroy CDK Stack
+Safely destroy CDK stacks with confirmation prompts.
 
 ```bash
 ./destroy-cdk-project.sh
@@ -29,7 +36,7 @@ Interactive tool to safely destroy CDK stacks with confirmation prompts.
 
 ⚠️ **WARNING**: Permanently deletes AWS resources.
 
-📖 **Documentation**: See [docs/](docs/) for complete guides and examples
+📖 **Documentation**: See [docs/](docs/) for guides
 
 ---
 
