@@ -2,21 +2,23 @@
 
 Collection of AWS CDK infrastructure templates and utilities.
 
-## 🚀 Quick Start: EC2 Instance Launcher
+## 🛠️ Management Tools
 
-This repo includes an **AWS EC2 Start Script Generator** that automatically discovers your EC2 instances and creates keyboard-shortcut-friendly launch scripts.
+📚 **Quick Reference**: [TOOLS_OVERVIEW.md](TOOLS_OVERVIEW.md) - Compare all tools and see usage examples
 
-### Features
+### 🚀 EC2 Instance Launcher
 
-- 🔍 **Auto-discovers** your EC2 instances from AWS
-- 🌍 **Multi-region** support
-- 🏷️ **Smart naming** from instance Name tags
-- ⚡ **One-command** instance startup
-- 🔐 **SSH config** auto-update with dynamic IPs
-- 💻 **Desktop notifications**
+Automatically discover and create launch scripts for your EC2 instances.
 
-### Usage
+**Features:**
+- 🔍 Auto-discovers EC2 instances from AWS
+- 🌍 Multi-region support
+- 🏷️ Smart naming from instance Name tags
+- ⚡ One-command instance startup
+- 🔐 SSH config auto-update with dynamic IPs
+- 💻 Desktop notifications
 
+**Usage:**
 ```bash
 # Generate a starter script
 ./create-start-script.sh
@@ -25,7 +27,31 @@ This repo includes an **AWS EC2 Start Script Generator** that automatically disc
 start-aws-<your-project>
 ```
 
-See [START_SCRIPT_GUIDE.md](START_SCRIPT_GUIDE.md) for complete documentation.
+📖 [START_SCRIPT_GUIDE.md](START_SCRIPT_GUIDE.md) | 📄 [Example Output](EXAMPLE_OUTPUT.md)
+
+---
+
+### 🔥 CDK Stack Destroyer
+
+Interactive and safe destruction of CDK stacks with confirmation prompts.
+
+**Features:**
+- 🔍 Auto-discovers CDK projects in repository
+- 📋 Lists all resources before destruction
+- 🔒 Multiple confirmation layers
+- 🛡️ Safe defaults (all prompts default to "No")
+- 📊 Shows account and region information
+- ⚠️ Requires exact project name to proceed
+
+**Usage:**
+```bash
+# Destroy a CDK project
+./destroy-cdk-project.sh
+```
+
+⚠️ **WARNING**: This permanently deletes AWS resources. Use with caution.
+
+📖 [DESTROY_CDK_GUIDE.md](DESTROY_CDK_GUIDE.md) | 📄 [Example Output](DESTROY_EXAMPLE_OUTPUT.md)
 
 ## Projects
 
