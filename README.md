@@ -42,16 +42,6 @@ Safely destroy CDK stacks with confirmation prompts.
 
 ## Available Templates
 
-### [aws-3tier-app](./aws-3tier-app)
-Production-grade 3-tier architecture with PostgreSQL RDS, ElastiCache Redis, EC2, ALB, CloudFront, and WAF.
-
-**Cost:** ~$97/month
-
-### [aws-infra-poc](./aws-infra-poc)
-Static + dynamic content hosting with CloudFront, S3, ALB, and EC2.
-
-**Cost:** ~$25-35/month
-
 ### [ec2-autoshutdown](./ec2-autoshutdown)
 EC2 instance with auto-shutdown based on inactivity (CPU/SSH detection).
 

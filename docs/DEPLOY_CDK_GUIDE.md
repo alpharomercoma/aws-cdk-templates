@@ -33,8 +33,6 @@ No.  Template              Description
 ----------------------------------------
 1.   ec2-autoshutdown      EC2 with auto-shutdown
 2.   trainium-spot         ML workload spot instance
-3.   aws-3tier-app         3-tier architecture
-4.   aws-infra-poc         Static + dynamic hosting
 ----------------------------------------
 (List is dynamic - shows all templates with cdk.json)
 
