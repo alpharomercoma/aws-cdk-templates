@@ -1,8 +1,8 @@
-import * as cdk from 'aws-cdk-lib/core';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
 
 /**
@@ -200,10 +200,10 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       role,
       keyPair,
 
-      // Instance type: t4g.small (ARM-based Graviton)
+      // Instance type: t4g.large (ARM-based Graviton, 2 vCPUs, 8 GiB)
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T4G,
-        ec2.InstanceSize.SMALL
+        ec2.InstanceSize.LARGE
       ),
 
       // Ubuntu ARM64 - Latest LTS (via SSM Parameter)

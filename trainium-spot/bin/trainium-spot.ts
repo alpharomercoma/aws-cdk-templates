@@ -7,8 +7,8 @@ import { TrainiumSpotStack } from '../lib/trainium-spot-stack';
 const app = new cdk.App();
 new TrainiumSpotStack(app, 'TrainiumSpotStack', {
   env: {
-    region: 'us-east-2',
+    region: 'us-east-1',
     account: process.env.CDK_DEFAULT_ACCOUNT,
   },
-  description: 'Cost-optimized Trainium1 spot instance with aggressive auto-shutdown (2 min inactivity)',
+  description: 'Cost-optimized Trainium1 spot instance with auto-shutdown on inactivity detection',
 });

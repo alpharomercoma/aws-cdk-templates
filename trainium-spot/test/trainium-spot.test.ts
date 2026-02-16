@@ -10,7 +10,7 @@ describe('TrainiumSpotStack', () => {
   beforeEach(() => {
     app = new cdk.App();
     stack = new TrainiumSpotStack(app, 'TestTrainiumSpotStack', {
-      env: { region: 'us-east-2', account: '123456789012' },
+      env: { region: 'us-east-1', account: '123456789012' },
     });
     template = Template.fromStack(stack);
   });
@@ -63,7 +63,7 @@ describe('TrainiumSpotStack', () => {
           InstanceMarketOptions: Match.objectLike({
             MarketType: 'spot',
             SpotOptions: Match.objectLike({
-              SpotInstanceType: 'one-time',
+              SpotInstanceType: 'persistent',
               InstanceInterruptionBehavior: 'stop',
             }),
           }),

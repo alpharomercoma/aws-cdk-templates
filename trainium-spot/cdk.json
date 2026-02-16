@@ -17,11 +17,6 @@
   "context": {
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
-    "@aws-cdk/core:target-partitions": ["aws", "aws-cn"],
-    "availability-zones:account=600627330911:region=us-east-2": [
-      "us-east-2a",
-      "us-east-2b",
-      "us-east-2c"
-    ]
+    "@aws-cdk/core:target-partitions": ["aws", "aws-cn"]
   }
 }
