@@ -33,7 +33,7 @@ describe('TrainiumSpotStack', () => {
   });
 
   describe('Security Group Configuration', () => {
-    test('creates security group with SSH access', () => {
+    test('creates security group with SSH access restricted by default', () => {
       template.hasResourceProperties('AWS::EC2::SecurityGroup', {
         GroupDescription: 'Security group for Trainium spot instance',
         SecurityGroupIngress: Match.arrayWith([
@@ -41,7 +41,7 @@ describe('TrainiumSpotStack', () => {
             FromPort: 22,
             ToPort: 22,
             IpProtocol: 'tcp',
-            CidrIp: '0.0.0.0/0',
+            CidrIp: '127.0.0.1/32',
           }),
         ]),
       });
@@ -104,6 +104,16 @@ describe('TrainiumSpotStack', () => {
       template.hasResourceProperties('AWS::EC2::LaunchTemplate', {
         LaunchTemplateData: Match.objectLike({
           UserData: Match.anyValue(),
+        }),
+      });
+    });
+
+    test('enforces IMDSv2 on launch template metadata options', () => {
+      template.hasResourceProperties('AWS::EC2::LaunchTemplate', {
+        LaunchTemplateData: Match.objectLike({
+          MetadataOptions: Match.objectLike({
+            HttpTokens: 'required',
+          }),
         }),
       });
     });

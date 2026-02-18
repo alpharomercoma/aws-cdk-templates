@@ -30,6 +30,7 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    const sshAllowedCidr = this.node.tryGetContext('sshAllowedCidr') ?? '127.0.0.1/32';
 
     // ============================================================
     // VPC Configuration
@@ -56,9 +57,9 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       allowAllOutbound: true,
     });
 
-    // Allow SSH access (restrict to your IP in production)
+    // Restrict SSH by default; override with `-c sshAllowedCidr=x.x.x.x/32` when needed.
     securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
+      ec2.Peer.ipv4(sshAllowedCidr),
       ec2.Port.tcp(22),
       'Allow SSH access'
     );
@@ -301,6 +302,9 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       // User data for SSH inactivity detection
       userData,
 
+      // Enforce IMDSv2 to reduce metadata credential theft risk.
+      requireImdsv2: true,
+
       // Enable detailed monitoring for CloudWatch
       detailedMonitoring: true,
     });
@@ -378,6 +382,11 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'Region', {
       value: this.region,
       description: 'Deployment region',
+    });
+
+    new cdk.CfnOutput(this, 'SshAllowedCidr', {
+      value: sshAllowedCidr,
+      description: 'CIDR allowed to SSH to TCP/22',
     });
   }
 }

@@ -32,6 +32,7 @@ export class TrainiumSpotStack extends cdk.Stack {
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+    const sshAllowedCidr = this.node.tryGetContext('sshAllowedCidr') ?? '127.0.0.1/32';
 
     // ============================================================
     // VPC Configuration - Minimal setup for cost optimization
@@ -58,9 +59,9 @@ export class TrainiumSpotStack extends cdk.Stack {
       allowAllOutbound: true,
     });
 
-    // Allow SSH access
+    // Restrict SSH by default; override with `-c sshAllowedCidr=x.x.x.x/32` when needed.
     securityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
+      ec2.Peer.ipv4(sshAllowedCidr),
       ec2.Port.tcp(22),
       'Allow SSH access'
     );
@@ -102,9 +103,11 @@ export class TrainiumSpotStack extends cdk.Stack {
       'echo "Installing AWS Neuron SDK..."',
       '. /etc/os-release',
       'sudo tee /etc/apt/sources.list.d/neuron.list > /dev/null <<EOF',
-      'deb https://apt.repos.neuron.amazonaws.com ${VERSION_CODENAME} main',
+      'deb [signed-by=/etc/apt/keyrings/neuron.gpg] https://apt.repos.neuron.amazonaws.com ${VERSION_CODENAME} main',
       'EOF',
-      'wget -qO - https://apt.repos.neuron.amazonaws.com/GPG-PUB-KEY-AMAZON-AWS-NEURON.PUB | sudo apt-key add -',
+      'sudo install -m 0755 -d /etc/apt/keyrings',
+      'wget -qO- https://apt.repos.neuron.amazonaws.com/GPG-PUB-KEY-AMAZON-AWS-NEURON.PUB | sudo gpg --dearmor -o /etc/apt/keyrings/neuron.gpg',
+      'sudo chmod 0644 /etc/apt/keyrings/neuron.gpg',
       'sudo apt-get update -y',
       'sudo apt-get install -y aws-neuronx-runtime-lib aws-neuronx-collectives aws-neuronx-tools || true',
       '',
@@ -334,6 +337,9 @@ export class TrainiumSpotStack extends cdk.Stack {
       CoreCount: 2,
       ThreadsPerCore: 1,
     });
+    cfnLaunchTemplate.addPropertyOverride('LaunchTemplateData.MetadataOptions', {
+      HttpTokens: 'required',
+    });
 
     // ============================================================
     // EC2 Instance using Launch Template
@@ -413,6 +419,11 @@ export class TrainiumSpotStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CostOptimizationSummary', {
       value: 'Spot pricing + 10-min idle timeout + minimal storage + reduced CPU threads',
       description: 'Cost optimization features enabled',
+    });
+
+    new cdk.CfnOutput(this, 'SshAllowedCidr', {
+      value: sshAllowedCidr,
+      description: 'CIDR allowed to SSH to TCP/22',
     });
   }
 }

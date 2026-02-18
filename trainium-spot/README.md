@@ -51,8 +51,10 @@ cd trainium-spot
 pnpm install
 pnpm run build
 npx cdk bootstrap   # first time only
-npx cdk deploy
+npx cdk deploy -c sshAllowedCidr="$(curl -s https://checkip.amazonaws.com)/32"
 ```
+
+Default SSH ingress is `127.0.0.1/32`. Set `sshAllowedCidr` explicitly at deploy time to allow remote SSH.
 
 ## Connect
 
