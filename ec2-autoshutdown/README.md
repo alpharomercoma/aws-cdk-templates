@@ -15,20 +15,29 @@ EC2 instance with automatic shutdown on inactivity detection.
 
 ## Auto-Shutdown
 
-### CloudWatch Alarm (Primary)
+### CloudWatch Alarm (Observability)
 
-Monitors CPU utilization via CloudWatch. Stops the instance when average CPU stays below 5% for 15 minutes (3 × 5-min periods).
+Monitors CPU utilization via CloudWatch and raises an idle signal when average CPU stays below 5% for 15 minutes (3 × 5-min periods).
 
-### SSH Session Detection (Secondary)
+### Multi-Signal Idle Detection (Primary Shutdown Path)
 
-Systemd timer runs every 5 minutes checking for active SSH sessions via `who`. Shuts down after 2 consecutive idle checks (10 minutes). 10-minute boot grace period.
+Systemd timer runs every 5 minutes and evaluates:
+- SSH sessions / sshd child processes / screen-tmux sessions
+- CPU busy percentage
+- Network throughput (combined RX+TX)
+- Disk I/O (combined read/write IOPS and throughput)
+
+Shutdown decision uses a quorum model:
+- `SSH/session signals are idle` **AND**
+- at least `2 of 3` workload-idle signals are idle (`CPU`, `Network`, `Disk`)
+- for `2` consecutive checks (`10` minutes), with a 10-minute boot grace period
 
 ## Architecture
 
 ```
 EC2 Instance (t4g.large)
-├── CloudWatch Alarm (CPU < 5%, 15 min) → EC2 Stop Action
-└── Systemd Timer (SSH idle, 10 min) → shutdown -h now
+├── CloudWatch Alarm (CPU < 5%, 15 min) for visibility
+└── Systemd Timer (multi-signal quorum, 10 min) → shutdown -h now
 ```
 
 ## Deploy
