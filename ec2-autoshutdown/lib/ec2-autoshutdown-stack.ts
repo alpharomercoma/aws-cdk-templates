@@ -82,7 +82,6 @@ export class Ec2AutoshutdownStack extends cdk.Stack {
       description: 'Role for EC2 instance with SSM access',
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess'),
       ],
     });
 
