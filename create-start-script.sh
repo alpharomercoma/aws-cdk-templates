@@ -58,12 +58,22 @@ INSTANCE_ID="${INSTANCE_ID}"
 REGION="${REGION}"
 SSH_KEY="${SSH_KEY}"
 SSH_USER="${SSH_USER}"
+SSH_CONFIG="\${HOME}/.ssh/config"
+SSH_HOST_ALIAS="aws-${INSTANCE_NAME// /-}"
 
-echo "Starting instance \$INSTANCE_ID in \$REGION..."
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "\$1" "\$2" -u low -t 3000
+  fi
+}
+
+echo "Checking instance state..."
 STATE=\$(aws ec2 describe-instances --region "\$REGION" --instance-ids "\$INSTANCE_ID" \
   --query 'Reservations[0].Instances[0].State.Name' --output text)
 
 if [ "\$STATE" = "stopped" ]; then
+  echo "Starting instance \$INSTANCE_ID in \$REGION..."
+  notify "AWS Dev Box" "Waking up instance..."
   aws ec2 start-instances --instance-ids "\$INSTANCE_ID" --region "\$REGION" --output text >/dev/null
   echo "Waiting for instance to start..."
   aws ec2 wait instance-running --instance-ids "\$INSTANCE_ID" --region "\$REGION"
@@ -74,9 +84,29 @@ else
   exit 1
 fi
 
+echo "Waiting for EC2 status checks..."
+aws ec2 wait instance-status-ok --instance-ids "\$INSTANCE_ID" --region "\$REGION"
+
 IP=\$(aws ec2 describe-instances --region "\$REGION" --instance-ids "\$INSTANCE_ID" \
   --query 'Reservations[0].Instances[0].PublicIpAddress' --output text)
-echo "Public IP: \$IP"
+echo "Instance is up at: \$IP"
+
+mkdir -p "\$(dirname "\$SSH_CONFIG")"
+touch "\$SSH_CONFIG"
+if grep -q "# AWS_DEV_BOX_START \${SSH_HOST_ALIAS}" "\$SSH_CONFIG"; then
+  sed -i "/# AWS_DEV_BOX_START \${SSH_HOST_ALIAS}/,/# AWS_DEV_BOX_END \${SSH_HOST_ALIAS}/ s/HostName .*/HostName \$IP/" "\$SSH_CONFIG"
+else
+  cat >> "\$SSH_CONFIG" <<EOF
+# AWS_DEV_BOX_START \${SSH_HOST_ALIAS}
+Host \${SSH_HOST_ALIAS}
+  HostName \$IP
+  User \$SSH_USER
+  IdentityFile \$SSH_KEY
+# AWS_DEV_BOX_END \${SSH_HOST_ALIAS}
+EOF
+fi
+echo "SSH config updated for host alias: \$SSH_HOST_ALIAS"
+notify "AWS Dev Box Ready" "Instance is UP at \$IP. SSH config updated."
 
 echo "Connecting via SSH..."
 ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=accept-new "\$SSH_USER@\$IP"
